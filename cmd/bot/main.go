@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"ozon/go-hw-bot/config"
 	"ozon/go-hw-bot/internal/commander"
+	"ozon/go-hw-bot/internal/handlers"
 )
 
 func main() {
@@ -20,6 +21,8 @@ func main() {
 		fmt.Println("Error: " + err.Error())
 		return
 	}
+
+	handlers.AddHandler(cmd)
 
 	if err := cmd.Run(); err != nil {
 		fmt.Println("Error: " + err.Error())
