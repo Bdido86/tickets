@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"ozon/go-hw-bot/config"
+	"ozon/go-hw-bot/internal/commander"
 )
 
 func main() {
@@ -14,5 +15,14 @@ func main() {
 		return
 	}
 
-	fmt.Print(c)
+	cmd, err := commander.Init(c)
+	if err != nil {
+		fmt.Println("Error: " + err.Error())
+		return
+	}
+
+	if err := cmd.Run(); err != nil {
+		fmt.Println("Error: " + err.Error())
+		return
+	}
 }
