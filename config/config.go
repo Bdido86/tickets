@@ -32,16 +32,19 @@ func init() {
 		fmt.Println("No .env file found.")
 		panic("No .env file")
 	}
+
+	singleInstance = new()
 }
 
-func GetInstance() *Config {
-	if singleInstance == nil {
-		singleInstance = &Config{
-			token: getEnv(apiToken, ""),
-			debug: getEnvAsBool(debug, false),
-		}
-	}
+func GetConfig() *Config {
 	return singleInstance
+}
+
+func new() *Config {
+	return &Config{
+		token: getEnv(apiToken, ""),
+		debug: getEnvAsBool(debug, false),
+	}
 }
 
 func getEnv(key string, defaultVal string) string {
