@@ -12,6 +12,8 @@ const (
 	debug    = "DEBUG"
 )
 
+var singleInstance *Config
+
 type Config struct {
 	token string
 	debug bool
@@ -32,11 +34,14 @@ func init() {
 	}
 }
 
-func New() *Config {
-	return &Config{
-		token: getEnv(apiToken, ""),
-		debug: getEnvAsBool(debug, false),
+func GetInstance() *Config {
+	if singleInstance == nil {
+		singleInstance = &Config{
+			token: getEnv(apiToken, ""),
+			debug: getEnvAsBool(debug, false),
+		}
 	}
+	return singleInstance
 }
 
 func getEnv(key string, defaultVal string) string {
