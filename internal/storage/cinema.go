@@ -1,5 +1,7 @@
 package storage
 
+var lastTicketId = uint(0)
+
 var films = map[uint]string{
 	1: "Зеленая миля",
 	2: "Бойцовский клуб",
@@ -26,6 +28,17 @@ type Ticket struct {
 	filmId  uint
 }
 
+func newTicket(filmId, roomId, placeId uint) *Ticket {
+	lastTicketId++
+
+	return &Ticket{
+		id:      lastTicketId,
+		filmId:  filmId,
+		roomId:  roomId,
+		placeId: placeId,
+	}
+}
+
 func (r Room) GetNumber() uint {
 	return r.number
 }
@@ -44,4 +57,12 @@ func (p Place) GetNumber() uint {
 
 func (p Place) GetUserId() uint {
 	return p.userId
+}
+
+func (t Ticket) GetId() uint {
+	return t.id
+}
+
+func (t Ticket) GetPlaceId() uint {
+	return t.placeId
 }

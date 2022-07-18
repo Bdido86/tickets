@@ -15,7 +15,7 @@ func init() {
 	for id, _ := range films {
 		places := make(map[uint]*Place)
 		maxSeat := 2 + rand.Intn(6)
-		for i := 1; i < maxSeat; i++ {
+		for i := 1; i <= maxSeat; i++ {
 			place := Place{
 				number: uint(i),
 			}
@@ -33,13 +33,13 @@ func init() {
 func GetRoom(filmId uint) (*Room, error) {
 	room, ok := dataRooms[filmId]
 	if !ok {
-		return nil, errors.New("Bad film ID")
+		return nil, errors.New("Bad film ID, empty room for film")
 	}
 
 	return room, nil
 }
 
-func StartUser(id uint, name string) {
+func InitCurrentUser(id uint, name string) {
 	if _, ok := dataUsers[id]; ok {
 		return
 	}
@@ -50,4 +50,21 @@ func StartUser(id uint, name string) {
 
 func GetFilms() map[uint]string {
 	return films
+}
+
+func BuyTicket(filmId, placeId, userId uint) (*Ticket, error) {
+	place, ok := dataRooms[filmId].places[placeId]
+	if !ok {
+		return nil, errors.New("Place ID not found")
+	}
+	if !place.IsFree() {
+		return nil, errors.New("Place ID is is taken")
+	}
+
+	place.userId = userId
+
+	ticket := newTicket(filmId, filmId, placeId)
+	dataUsers[userId].tickets[ticket.id] = ticket
+
+	return ticket, nil
 }

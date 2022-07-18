@@ -2,10 +2,12 @@ package handlers
 
 import "ozon/go-hw-bot/internal/storage"
 
-func startFunc(userId uint, userName string) string {
-	storage.StartUser(userId, userName)
-
+func startFunc(userName string) string {
 	return "Привет " + userName + "! \n\r" +
 		"Сегодня хороший день, чтобы сходить в кино. Для выбора фильма жми /films.\n\r" +
 		"Для справочной информации используй команду /help"
+}
+
+func initCurrentUser(userId uint, userName string) {
+	storage.InitCurrentUser(userId, userName)
 }

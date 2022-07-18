@@ -11,9 +11,11 @@ const (
 )
 
 func Run(m commander.Message) string {
+	initCurrentUser(m.UserId(), m.UserName())
+
 	switch m.Cmd() {
 	case startCmd:
-		return startFunc(m.UserId(), m.UserName())
+		return startFunc(m.UserName())
 	case helpCmd:
 		return helpFunc()
 
