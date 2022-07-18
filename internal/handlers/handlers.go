@@ -5,7 +5,9 @@ import "ozon/go-hw-bot/internal/commander"
 const (
 	startCmd = "start"
 	helpCmd  = "help"
+
 	filmsCmd = "films"
+	filmCmd  = "film"
 )
 
 func Run(m commander.Message) string {
@@ -14,8 +16,11 @@ func Run(m commander.Message) string {
 		return startFunc(m.UserName())
 	case helpCmd:
 		return helpFunc()
-		//case FilmsCmd:
-		//	return filmsFunc()
+
+	case filmCmd:
+		return filmFunc(m.Arguments())
+	case filmsCmd:
+		return filmsFunc()
 	}
 
 	return "Неизвестная команда. Посмотрите справку по командам /help"

@@ -12,16 +12,15 @@ type Message struct {
 }
 
 func newMessage(m *tgbotapi.Message) Message {
+	parsedCmd := strings.Split(m.Command(), "_")
 	message := Message{
-		cmd:      m.Command(),
+		cmd:      parsedCmd[0],
 		userName: m.From.UserName,
 	}
 
-	arg := m.CommandArguments()
-	if arg != "" {
-		message.arguments = strings.Split(arg, " ")
+	if len(parsedCmd) > 1 {
+		message.arguments = parsedCmd[1:]
 	}
-
 	return message
 }
 
