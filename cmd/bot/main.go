@@ -8,8 +8,6 @@ import (
 )
 
 func main() {
-	fmt.Println("Start bot")
-
 	c := config.GetConfig()
 	if len(c.Token()) == 0 {
 		fmt.Println("Config error: token is empty")

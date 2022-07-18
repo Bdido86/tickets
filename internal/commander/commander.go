@@ -25,7 +25,6 @@ func Init(config *config.Config) (*Commander, error) {
 	}
 
 	bot.Debug = config.Debug()
-	fmt.Printf("Authorized on account %s", bot.Self.UserName)
 
 	return &Commander{
 		bot: bot,
