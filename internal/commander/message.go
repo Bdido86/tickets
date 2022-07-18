@@ -9,6 +9,7 @@ type Message struct {
 	cmd       string
 	arguments []string
 	userName  string
+	userId    uint
 }
 
 func newMessage(m *tgbotapi.Message) Message {
@@ -16,6 +17,7 @@ func newMessage(m *tgbotapi.Message) Message {
 	message := Message{
 		cmd:      parsedCmd[0],
 		userName: m.From.UserName,
+		userId:   uint(m.From.ID),
 	}
 
 	if len(parsedCmd) > 1 {
@@ -36,10 +38,6 @@ func (m Message) UserName() string {
 	return m.userName
 }
 
-//func (m Message) CallBackData() string {
-//	return m.callBackData
-//}
-//
-//func (m Message) IsCallBackData() bool {
-//	return m.callBackData != "" && len(m.callBackData) > 0
-//}
+func (m Message) UserId() uint {
+	return m.userId
+}

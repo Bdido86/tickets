@@ -13,12 +13,12 @@ const (
 func Run(m commander.Message) string {
 	switch m.Cmd() {
 	case startCmd:
-		return startFunc(m.UserName())
+		return startFunc(m.UserId(), m.UserName())
 	case helpCmd:
 		return helpFunc()
 
 	case filmCmd:
-		return filmFunc(m.Arguments())
+		return filmFunc(m.Arguments(), m.UserId())
 	case filmsCmd:
 		return filmsFunc()
 	}
