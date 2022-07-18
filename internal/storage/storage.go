@@ -68,3 +68,29 @@ func BuyTicket(filmId, placeId, userId uint) (*Ticket, error) {
 
 	return ticket, nil
 }
+
+func GetTickets(userId uint) (map[uint]*Ticket, error) {
+	user, ok := dataUsers[userId]
+	if !ok {
+		return nil, errors.New("User not found")
+	}
+
+	return user.tickets, nil
+}
+
+func ReturnTicket(userId uint, ticketId uint) error {
+	user, ok := dataUsers[userId]
+	if !ok {
+		return errors.New("User not found")
+	}
+
+	ticket, ok := user.tickets[ticketId]
+	if !ok {
+		return errors.New("Ticket not found")
+	}
+
+	dataRooms[ticket.filmId].places[ticket.placeId].userId = 0
+	delete(user.tickets, ticketId)
+
+	return nil
+}

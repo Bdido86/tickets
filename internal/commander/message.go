@@ -7,9 +7,9 @@ import (
 
 type Message struct {
 	cmd       string
-	arguments []string
 	userName  string
 	userId    uint
+	arguments []string
 }
 
 func newMessage(m *tgbotapi.Message) Message {

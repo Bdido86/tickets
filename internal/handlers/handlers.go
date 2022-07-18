@@ -6,8 +6,11 @@ const (
 	startCmd = "start"
 	helpCmd  = "help"
 
-	filmsCmd = "films"
 	filmCmd  = "film"
+	filmsCmd = "films"
+
+	ticketCmd  = "ticket"
+	ticketsCmd = "tickets"
 )
 
 func Run(m commander.Message) string {
@@ -23,6 +26,11 @@ func Run(m commander.Message) string {
 		return filmFunc(m.Arguments(), m.UserId())
 	case filmsCmd:
 		return filmsFunc()
+
+	case ticketCmd:
+		return ticketFunc(m.Arguments(), m.UserId())
+	case ticketsCmd:
+		return ticketsFunc(m.UserId())
 	}
 
 	return "Неизвестная команда. Посмотрите справку по командам /help"

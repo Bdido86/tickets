@@ -66,3 +66,11 @@ func (t Ticket) GetId() uint {
 func (t Ticket) GetPlaceId() uint {
 	return t.placeId
 }
+
+func (t Ticket) GetRoomId() uint {
+	return t.roomId
+}
+
+func (t Ticket) GetFilmId() uint {
+	return t.filmId
+}
