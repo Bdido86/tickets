@@ -33,7 +33,7 @@ func Run(m commander.Message) string {
 		return ticketsFunc(m.UserId())
 	}
 
-	return "Неизвестная команда. Посмотрите справку по командам /help"
+	return "Неизвестная команда. Справка по командам /help"
 }
 
 func AddHandler(c *commander.Commander) {

@@ -7,7 +7,8 @@ import (
 
 func startFunc(userName string) string {
 	return "Привет " + userName + " " + tools.EmojiWinkingFace + "\n\r" +
-		"Сегодня хороший день, чтобы сходить в кино. Для выбора фильма жми /films \n\r" +
+		"Сегодня хороший день, чтобы сходить в кино.\r\n\r\n" +
+		"Для выбора фильма жми /films \n\r" +
 		"Для справочной информации используй команду /help"
 }
 
