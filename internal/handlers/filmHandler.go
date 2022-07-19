@@ -2,30 +2,19 @@ package handlers
 
 import (
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/storage"
+	"gitlab.ozon.dev/Bdido86/movie-tickets/tools"
+	"sort"
 	"strconv"
 	"time"
 )
-
-var seatsEmoji = map[uint]string{
-	0: "\x39\xE2\x83\xA3",
-	1: "\x31\xE2\x83\xA3",
-	2: "\x32\xE2\x83\xA3",
-	3: "\x33\xE2\x83\xA3",
-	4: "\x34\xE2\x83\xA3",
-	5: "\x35\xE2\x83\xA3",
-	6: "\x36\xE2\x83\xA3",
-	7: "\x37\xE2\x83\xA3",
-	8: "\x38\xE2\x83\xA3",
-	9: "\x39\xE2\x83\xA3",
-}
 
 func filmsFunc() (res string) {
 	films := storage.GetFilms()
 	dt := time.Now()
 
-	res = "Расписание на сегодня " + dt.Format("02-01-2006") + " \xF0\x9F\x8E\xA5: \r\n\r\n"
+	res = "Расписание на сегодня " + dt.Format("02-01-2006") + " " + tools.EmojiCamera + ": \r\n\r\n"
 	for id, film := range films {
-		res += "\xE2\x9C\x94 " + film + " \xF0\x9F\x91\x89 /film_" + strconv.FormatUint(uint64(id), 10) + "\r\n"
+		res += tools.EmojiCheckBlack + " " + film + " " + tools.EmojiRightPoint + " /film_" + strconv.FormatUint(uint64(id), 10) + "\r\n"
 	}
 	return
 }
@@ -53,15 +42,23 @@ func filmFunc(arguments []string, userId uint) (res string) {
 	}
 
 	places := room.GetPlaces()
-	res = "Ваш выбор фильма\r\n\xE2\x9C\x85 " + film + ":\r\n"
-	res += "\xE2\x9D\x97 Показ будет идти в зале номер " + strconv.FormatUint(uint64(room.GetNumber()), 10) + "\r\n"
+	res = "Ваш выбор фильма\r\n" + tools.EmojiCheckGreen + " " + film + ":\r\n"
+	res += "Показ будет идти в зале номер " + strconv.FormatUint(uint64(room.GetNumber()), 10) + "\r\n"
 
 	if len(arguments) == 1 {
-		res += "Необходимо выбрать место:\r\n"
+		res += "\r\nНеобходимо выбрать место:\r\n"
+
+		var keys []int
 		for _, place := range places {
-			res += seatsEmoji[place.GetNumber()] + ": "
+			keys = append(keys, int(place.GetNumber()))
+		}
+		sort.Ints(keys)
+
+		for _, k := range keys {
+			place := places[uint(k)]
+			res += tools.EmojiNumbers[place.GetNumber()] + ": "
 			if place.IsFree() {
-				res += "выбрать \xF0\x9F\x91\x89 /film_" + strconv.FormatUint(filmId64, 10) + "_" + strconv.FormatUint(uint64(place.GetNumber()), 10)
+				res += "выбрать " + tools.EmojiRightPoint + " /film_" + strconv.FormatUint(filmId64, 10) + "_" + strconv.FormatUint(uint64(place.GetNumber()), 10)
 			} else {
 				if place.GetUserId() == userId {
 					res += "вы ранее купили это место"
@@ -71,7 +68,6 @@ func filmFunc(arguments []string, userId uint) (res string) {
 			}
 			res += "\r\n"
 		}
-
 		return
 	}
 
@@ -101,6 +97,7 @@ func filmFunc(arguments []string, userId uint) (res string) {
 
 	res += "Место номер " + strconv.FormatUint(uint64(ticket.GetPlaceId()), 10) + "\r\n"
 	res += "Номер билета " + strconv.FormatUint(uint64(ticket.GetId()), 10) + "\r\n\r\n"
-	res += "ПРИЯТНОГО ПРОСМОТРА"
+	res += "Выбрать фильм " + tools.EmojiRightPoint + " /films \r\n"
+	res += "Список билетов " + tools.EmojiRightPoint + " /tickets \r\n"
 	return
 }

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/storage"
+	"gitlab.ozon.dev/Bdido86/movie-tickets/tools"
 	"strconv"
 )
 
@@ -12,16 +13,16 @@ func ticketsFunc(userId uint) (res string) {
 	}
 
 	if len(tickets) == 0 {
-		return "У вас нет билетов \xF0\x9F\x98\x9E \r\nФильмы на сегодня /films"
+		return "У вас нет билетов " + tools.EmojiPensiveFace + " \r\nФильмы на сегодня /films"
 	}
 
 	res += "Список ваших билетов:\r\n"
 	films := storage.GetFilms()
 	for _, ticket := range tickets {
-		res += "\xE2\x9C\x85 Билет " + strconv.FormatUint(uint64(ticket.GetId()), 10) + ", место " +
+		res += tools.EmojiCheckGreen + " Билет " + strconv.FormatUint(uint64(ticket.GetId()), 10) + ", место " +
 			strconv.FormatUint(uint64(ticket.GetPlaceId()), 10) + ", зал " +
 			strconv.FormatUint(uint64(ticket.GetRoomId()), 10) + ", фильм '" + films[ticket.GetFilmId()] +
-			"'; вернуть \xF0\x9F\x91\x89 /ticket_" + strconv.FormatUint(uint64(ticket.GetId()), 10) + "\r\n"
+			"'; вернуть " + tools.EmojiRightPoint + " /ticket_" + strconv.FormatUint(uint64(ticket.GetId()), 10) + "\r\n"
 	}
 	return
 }
@@ -42,5 +43,5 @@ func ticketFunc(arguments []string, userId uint) (res string) {
 		return err.Error()
 	}
 
-	return "\xE2\x9C\x94 Билет номер " + strconv.FormatUint(ticketId64, 10) + " успешно возвращен!"
+	return tools.EmojiCheckBlack + " Билет номер " + strconv.FormatUint(ticketId64, 10) + " успешно возвращен!"
 }
