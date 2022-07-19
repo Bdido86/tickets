@@ -1,6 +1,6 @@
 package handlers
 
-import "ozon/go-hw-bot/internal/commander"
+import "gitlab.ozon.dev/Bdido86/go-hw-bot/internal/commander"
 
 const (
 	startCmd = "start"

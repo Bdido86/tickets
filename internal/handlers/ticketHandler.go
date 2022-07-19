@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"ozon/go-hw-bot/internal/storage"
+	"gitlab.ozon.dev/Bdido86/go-hw-bot/internal/storage"
 	"strconv"
 )
 

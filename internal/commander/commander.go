@@ -4,7 +4,7 @@ import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/pkg/errors"
-	"ozon/go-hw-bot/config"
+	"gitlab.ozon.dev/Bdido86/go-hw-bot/config"
 )
 
 type CmdHandler func(m Message) string
