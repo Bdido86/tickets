@@ -1,6 +1,6 @@
 package handlers
 
-import "gitlab.ozon.dev/Bdido86/go-hw-bot/internal/storage"
+import "gitlab.ozon.dev/Bdido86/movie-tickets/internal/storage"
 
 func startFunc(userName string) string {
 	return "Привет " + userName + "! \n\r" +

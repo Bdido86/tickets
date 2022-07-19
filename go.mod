@@ -1,4 +1,4 @@
-module gitlab.ozon.dev/Bdido86/go-hw-bot
+module gitlab.ozon.dev/Bdido86/movie-tickets
 
 go 1.18
 

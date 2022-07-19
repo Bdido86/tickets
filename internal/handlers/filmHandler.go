@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"gitlab.ozon.dev/Bdido86/go-hw-bot/internal/storage"
+	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/storage"
 	"strconv"
 	"time"
 )

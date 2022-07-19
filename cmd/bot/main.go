@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"gitlab.ozon.dev/Bdido86/go-hw-bot/config"
-	"gitlab.ozon.dev/Bdido86/go-hw-bot/internal/commander"
-	"gitlab.ozon.dev/Bdido86/go-hw-bot/internal/handlers"
+	"gitlab.ozon.dev/Bdido86/movie-tickets/config"
+	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/commander"
+	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/handlers"
 )
 
 func main() {
