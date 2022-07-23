@@ -1,21 +1,23 @@
-package commander
+package bot
 
 import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/pkg/errors"
-	"gitlab.ozon.dev/Bdido86/movie-tickets/config"
+	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/config"
 )
 
-type CmdHandler func(m Message) string
+const botTimeout int = 60
 
-func (c *Commander) RegisterHandler(f CmdHandler) {
-	c.route = f
+type CommandProcessor func(m Message) string
+
+func (c *Commander) RegisterCommandProcessor(cp CommandProcessor) {
+	c.processor = cp
 }
 
 type Commander struct {
-	bot   *tgbotapi.BotAPI
-	route CmdHandler
+	bot       *tgbotapi.BotAPI
+	processor CommandProcessor
 }
 
 func Init(config *config.Config) (*Commander, error) {
@@ -33,7 +35,7 @@ func Init(config *config.Config) (*Commander, error) {
 
 func (c *Commander) Run() error {
 	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
+	u.Timeout = botTimeout
 
 	updates := c.bot.GetUpdatesChan(u)
 	for update := range updates {
@@ -48,7 +50,7 @@ func (c *Commander) Run() error {
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
 
 		message := newMessage(update.Message)
-		msg.Text = c.route(message)
+		msg.Text = c.processor(message)
 
 		if _, err := c.bot.Send(msg); err != nil {
 			fmt.Print(err)

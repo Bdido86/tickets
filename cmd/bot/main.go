@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"gitlab.ozon.dev/Bdido86/movie-tickets/config"
-	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/commander"
-	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/handlers"
+	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/config"
+	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/bot"
+	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/bot/command"
 )
 
 func main() {
@@ -14,13 +14,13 @@ func main() {
 		return
 	}
 
-	cmd, err := commander.Init(c)
+	cmd, err := bot.Init(c)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		return
 	}
 
-	handlers.AddHandler(cmd)
+	command.AddHandler(cmd)
 
 	if err := cmd.Run(); err != nil {
 		fmt.Println("Error: " + err.Error())

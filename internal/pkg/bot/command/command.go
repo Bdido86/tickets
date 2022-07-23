@@ -1,6 +1,6 @@
-package handlers
+package command
 
-import "gitlab.ozon.dev/Bdido86/movie-tickets/internal/commander"
+import "gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/bot"
 
 const (
 	startCmd = "start"
@@ -13,7 +13,7 @@ const (
 	ticketsCmd = "tickets"
 )
 
-func Run(m commander.Message) string {
+func Run(m bot.Message) string {
 	initCurrentUser(m.UserId(), m.UserName())
 
 	switch m.Cmd() {
@@ -36,6 +36,6 @@ func Run(m commander.Message) string {
 	return "Неизвестная команда. Справка по командам /help"
 }
 
-func AddHandler(c *commander.Commander) {
-	c.RegisterHandler(Run)
+func AddHandler(c *bot.Commander) {
+	c.RegisterCommandProcessor(Run)
 }
