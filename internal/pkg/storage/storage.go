@@ -44,8 +44,11 @@ func InitCurrentUser(id uint, name string) {
 		return
 	}
 
-	user := newUser(id, name)
-	dataUsers[user.id] = user
+	initUser(id, name)
+}
+
+func AuthUser(name string) string {
+	return getAuthToken(name)
 }
 
 func GetFilms() map[uint]string {

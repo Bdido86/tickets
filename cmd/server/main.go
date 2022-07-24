@@ -1,25 +1,17 @@
 package main
 
 import (
-	"google.golang.org/grpc"
-	"net"
+	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/config"
+	"log"
 )
 
-func mani() {
-
-	runGRPCServer()
-}
-
-func runGRPCServer(user userPkg.Interface) {
-	listener, err := net.Listen("tcp", ":8081")
-	if err != nil {
-		panic(err)
+func main() {
+	c := config.GetConfig()
+	if len(c.Port()) == 0 {
+		log.Fatal("Config error: port is empty")
 	}
 
-	grpcServer := grpc.NewServer()
-	pb.RegisterAdminServer(grpcServer, apiPkg.New(user))
+	address := ":" + c.Port()
+	runGRPCServer(address)
 
-	if err = grpcServer.Serve(listener); err != nil {
-		panic(err)
-	}
 }
