@@ -10,6 +10,7 @@ plugins:
     out: pkg
     opt:
       - paths=source_relative
+      - require_unimplemented_servers=false
   - name: grpc-gateway
     path: bin/protoc-gen-grpc-gateway
     out: pkg

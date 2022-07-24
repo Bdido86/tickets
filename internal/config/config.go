@@ -8,25 +8,31 @@ import (
 )
 
 const (
-	tgToken = "TELEGRAM_BOT_API_TOKEN"
-	port    = "PORT"
-	debug   = "DEBUG"
+	tgToken    = "TELEGRAM_BOT_API_TOKEN"
+	serverPort = "SERVER_PORT"
+	restPort   = "REST_PORT"
+	debug      = "DEBUG"
 )
 
 var singleInstance *Config
 
 type Config struct {
-	token string
-	port  string
-	debug bool
+	token      string
+	serverPort string
+	restPort   string
+	debug      bool
 }
 
 func (c Config) Token() string {
 	return c.token
 }
 
-func (c Config) Port() string {
-	return c.port
+func (c Config) ServerPort() string {
+	return c.serverPort
+}
+
+func (c Config) RestPort() string {
+	return c.restPort
 }
 
 func (c Config) Debug() bool {
@@ -48,9 +54,10 @@ func GetConfig() *Config {
 
 func new() *Config {
 	return &Config{
-		token: getEnv(tgToken, ""),
-		port:  getEnv(port, ""),
-		debug: getEnvAsBool(debug, false),
+		token:      getEnv(tgToken, ""),
+		serverPort: getEnv(serverPort, ""),
+		restPort:   getEnv(restPort, ""),
+		debug:      getEnvAsBool(debug, false),
 	}
 }
 

@@ -3,13 +3,11 @@ syntax = "proto3";
 package api;
 option go_package = "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api;api";
 
-//message Pokemon {
-//  string id = 1;
-//  string pid = 2;
-//  string name = 3;
-//  string power = 4;
-//  string description = 5;
-//}
+import "google/api/annotations.proto";
+
+// ---------------------------------------------------------------------------------------------------------------------
+// UserAuth endpoint messages
+// ---------------------------------------------------------------------------------------------------------------------
 
 message UserAuthRequest {
   string name = 1;
@@ -18,7 +16,31 @@ message UserAuthResponse {
   string token = 1;
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// Films endpoint messages
+// ---------------------------------------------------------------------------------------------------------------------
+
+message FilmsRequest {}
+message FilmsResponse {
+  repeated Film films = 1;
+
+  message Film {
+    uint64 id = 1;
+    string name = 2;
+  }
+}
+
 
 service Cinema {
-  rpc UserAuth (UserAuthRequest) returns (UserAuthResponse);
+  rpc UserAuth (UserAuthRequest) returns (UserAuthResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth"
+    };
+  };
+
+  rpc Films (FilmsRequest) returns (FilmsResponse) {
+    option (google.api.http) = {
+      get: "/v1/films"
+    };
+  };
 }

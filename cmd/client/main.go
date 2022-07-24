@@ -12,11 +12,11 @@ import (
 
 func main() {
 	c := config.GetConfig()
-	if len(c.Port()) == 0 {
+	if len(c.ServerPort()) == 0 {
 		log.Fatal("Config error: port is empty")
 	}
 
-	address := ":" + c.Port()
+	address := ":" + c.ServerPort()
 	connection, err := grpc.Dial(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Error server connect tcp: %v", err)
