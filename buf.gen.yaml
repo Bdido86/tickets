@@ -2,17 +2,17 @@ version: v1
 plugins:
   - name: go
     path: bin/protoc-gen-go
-    out: pkg/api
+    out: pkg
     opt:
       - paths=source_relative
   - name: go-grpc
     path: bin/protoc-gen-go-grpc
-    out: pkg/api
+    out: pkg
     opt:
       - paths=source_relative
   - name: grpc-gateway
     path: bin/protoc-gen-grpc-gateway
-    out: pkg/api
+    out: pkg
     opt:
       - paths=source_relative
       - generate_unbound_methods=true
