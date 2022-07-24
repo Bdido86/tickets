@@ -1,7 +1,10 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/config"
+	pb "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
@@ -20,21 +23,16 @@ func main() {
 	}
 	defer connection.Close()
 
-	//client := pb.NewCinemaClient(connection)
-	//
-	//ctx := context.Background()
-	//var wg sync.WaitGroup
-	//for i := 0; i < 1000; i++ {
-	//	wg.Add(1)
-	//	go func() {
-	//		defer wg.Done()
-	//
-	//		_, errG := client.UserList(ctx, &pb.UserListRequest{})
-	//		if errG != nil {
-	//			panic(errG)
-	//		}
-	//	}()
-	//}
-	//
-	//wg.Wait()
+	client := pb.NewCinemaClient(connection)
+
+	ctx := context.Background()
+
+	request := &pb.UserAuthRequest{
+		Name: "dido",
+	}
+
+	response, err := client.UserAuth(ctx, request)
+
+	fmt.Printf("%+v \n", response)
+
 }

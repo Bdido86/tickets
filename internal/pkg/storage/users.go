@@ -46,7 +46,7 @@ func getAuthToken(name string) string {
 }
 
 func getToken(user *User) string {
-	return fmt.Sprintf("%d-%s", user.id, user.name)
+	return fmt.Sprintf("%s-%d", user.name, user.id)
 }
 
 func getNextUserId() uint {
