@@ -1,7 +1,10 @@
-.PHONY: run
+.PHONY: run-bot run-server
 
-run:
+run-bot:
 	go run cmd/bot/main.go
+
+run-server:
+	go run cmd/server/main.go
 
 LOCAL_BIN:=$(CURDIR)/bin
 .PHONY: .dev-tools
