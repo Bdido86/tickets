@@ -51,3 +51,7 @@ func (i *implementation) Films(_ context.Context, _ *pb.FilmsRequest) (*pb.Films
 		Films: result,
 	}, nil
 }
+
+func IsValidToken(token string) bool {
+	return storage.IsValidToken(token)
+}

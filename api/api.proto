@@ -20,7 +20,9 @@ message UserAuthResponse {
 // Films endpoint messages
 // ---------------------------------------------------------------------------------------------------------------------
 
-message FilmsRequest {}
+message FilmsRequest {
+
+}
 message FilmsResponse {
   repeated Film films = 1;
 

@@ -51,6 +51,16 @@ func AuthUser(name string) string {
 	return getAuthToken(name)
 }
 
+func IsValidToken(token string) bool {
+	for _, user := range dataUsers {
+		if token == getToken(user) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func GetFilms() map[uint]string {
 	return films
 }
