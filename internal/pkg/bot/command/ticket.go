@@ -38,7 +38,7 @@ func ticketFunc(arguments []string, userId uint) (res string) {
 	}
 
 	ticketId := uint(ticketId64)
-	err = storage.ReturnTicket(userId, ticketId)
+	err = storage.DeleteTicket(userId, ticketId)
 	if err != nil {
 		return err.Error()
 	}

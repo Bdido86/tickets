@@ -91,7 +91,7 @@ func GetTickets(userId uint) (map[uint]*Ticket, error) {
 	return user.tickets, nil
 }
 
-func ReturnTicket(userId uint, ticketId uint) error {
+func DeleteTicket(userId uint, ticketId uint) error {
 	user, ok := dataUsers[userId]
 	if !ok {
 		return errors.New("User not found")

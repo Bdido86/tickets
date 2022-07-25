@@ -2,10 +2,9 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	apiPkg "gitlab.ozon.dev/Bdido86/movie-tickets/internal/api"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/config"
-	apiPkg "gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/api"
 	pb "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -46,11 +45,9 @@ func runGRPCServer(serverAddress string) {
 	}
 	defer listener.Close()
 
-	newServer := apiPkg.New()
-
 	option := grpc.UnaryInterceptor(AuthInterceptor)
 	grpcServer := grpc.NewServer(option)
-	pb.RegisterCinemaServer(grpcServer, newServer)
+	pb.RegisterCinemaServer(grpcServer, apiPkg.NewServer())
 
 	if err = grpcServer.Serve(listener); err != nil {
 		panic(err)
@@ -85,25 +82,11 @@ func headerMatcherREST(key string) (string, bool) {
 }
 
 func AuthInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	paths := strings.Split(info.FullMethod, "/")
-
-	fmt.Printf("info %#v\n", paths)
-	fmt.Printf("info %#v\n", info.FullMethod)
-
-	for _, path := range paths {
-		if path == authPathRPC {
-			return handler(ctx, req)
-		}
+	if isAuthPath(info.FullMethod) {
+		return handler(ctx, req)
 	}
-
-	fmt.Printf("info %#v\n", info)
-	fmt.Printf("info %#v\n", info.FullMethod)
 
 	metaData, ok := metadata.FromIncomingContext(ctx)
-	for k, v := range metaData {
-		fmt.Printf("\t%v: %v\n", k, v)
-	}
-
 	if !ok {
 		return nil, status.Error(codes.PermissionDenied, "Header [token] is required1")
 	}
@@ -119,5 +102,15 @@ func AuthInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServe
 		}
 	}
 
-	return nil, status.Error(codes.PermissionDenied, "Header [token] is invalid. See 'auth' method")
+	return nil, status.Error(codes.PermissionDenied, "Header [Token] is invalid. See 'auth' method")
+}
+
+func isAuthPath(fullMethod string) bool {
+	paths := strings.Split(fullMethod, "/")
+	for _, path := range paths {
+		if path == authPathRPC {
+			return true
+		}
+	}
+	return false
 }

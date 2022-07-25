@@ -5,6 +5,57 @@ option go_package = "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api;api";
 
 import "google/api/annotations.proto";
 
+service Cinema {
+  rpc UserAuth (UserAuthRequest) returns (UserAuthResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth"
+      body: "*"
+    };
+  };
+
+  rpc Films (FilmsRequest) returns (FilmsResponse) {
+    option (google.api.http) = {
+      get: "/v1/films"
+    };
+  };
+
+  rpc FilmRoom (FilmRoomRequest) returns (FilmRoomResponse) {
+    option (google.api.http) = {
+      get: "/v1/films/{film_id}/room"
+    };
+  };
+
+  rpc TicketCreate (TicketCreateRequest) returns (TicketCreateResponse) {
+    option (google.api.http) = {
+      post: "/v1/films/{film_id}/room/{place_id}"
+    };
+  };
+
+  rpc TicketDelete (TicketDeleteRequest) returns (TicketDeleteResponse) {
+    option (google.api.http) = {
+      delete: "/v1/ticket/{ticket_id}"
+    };
+  };
+
+  rpc MyTickets (MyTicketsRequest) returns (MyTicketsResponse) {
+    option (google.api.http) = {
+      get: "/v1/my-tickets"
+    };
+  };
+}
+
+message Film {
+  uint64 id = 1;
+  string name = 2;
+}
+
+message Ticket {
+  uint64 id = 1;
+  uint64 filmId = 2;
+  uint64 roomId = 3;
+  uint64 placeId = 4;
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // UserAuth endpoint messages
 // ---------------------------------------------------------------------------------------------------------------------
@@ -20,29 +71,60 @@ message UserAuthResponse {
 // Films endpoint messages
 // ---------------------------------------------------------------------------------------------------------------------
 
-message FilmsRequest {
-
-}
+message FilmsRequest {}
 message FilmsResponse {
   repeated Film films = 1;
+}
 
-  message Film {
+// ---------------------------------------------------------------------------------------------------------------------
+// FilmRoom endpoint messages
+// ---------------------------------------------------------------------------------------------------------------------
+
+message FilmRoomRequest {
+  uint64 film_id = 1;
+}
+message FilmRoomResponse {
+  Film film = 1;
+  Room room = 2;
+
+  message Room {
     uint64 id = 1;
-    string name = 2;
+    repeated Place places = 3;
+  }
+
+  message Place {
+    uint64 id = 1;
+    bool isMy = 2;
+    bool isFree = 3;
   }
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// TicketCreate endpoint messages
+// ---------------------------------------------------------------------------------------------------------------------
 
-service Cinema {
-  rpc UserAuth (UserAuthRequest) returns (UserAuthResponse) {
-    option (google.api.http) = {
-      post: "/v1/auth"
-    };
-  };
+message TicketCreateRequest {
+  uint64 film_id = 1;
+  uint64 place_id = 2;
+}
+message TicketCreateResponse {
+  Ticket ticket = 1;
+}
 
-  rpc Films (FilmsRequest) returns (FilmsResponse) {
-    option (google.api.http) = {
-      get: "/v1/films"
-    };
-  };
+// ---------------------------------------------------------------------------------------------------------------------
+// TicketDelete endpoint messages
+// ---------------------------------------------------------------------------------------------------------------------
+
+message TicketDeleteRequest {
+  uint64 ticket_id = 1;
+}
+message TicketDeleteResponse {}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// MyTickets endpoint messages
+// ---------------------------------------------------------------------------------------------------------------------
+
+message MyTicketsRequest {}
+message MyTicketsResponse {
+  repeated Ticket tickets = 1;
 }
