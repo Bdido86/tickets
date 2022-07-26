@@ -22,8 +22,6 @@ const (
 	tokenHeader = "Token"
 	authPathRPC = "UserAuth"
 
-	requestTimeout = 1 * time.Second
-
 	swaggerRoute = "/v1/swagger"
 	swaggerPath  = "pkg/api/api.swagger.json"
 )
@@ -40,7 +38,7 @@ func main() {
 	serverAddress := ":" + c.ServerPort()
 	restAddress := ":" + c.RestPort()
 
-	go runREST(serverAddress, restAddress)
+	go runREST(serverAddress, restAddress, c.RequestTimeOutInMilliSecond())
 	runGRPCServer(serverAddress)
 }
 
@@ -60,13 +58,13 @@ func runGRPCServer(serverAddress string) {
 	}
 }
 
-func runREST(serverAddress, restAddress string) {
+func runREST(serverAddress, restAddress string, requestTimeoutInMilliSecond time.Duration) {
 	ctx := context.Background()
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	runtime.DefaultContextTimeout = requestTimeout
+	runtime.DefaultContextTimeout = requestTimeoutInMilliSecond
 
 	rmux := runtime.NewServeMux(
 		runtime.WithIncomingHeaderMatcher(headerMatcherREST),

@@ -5,22 +5,25 @@ import (
 	"github.com/joho/godotenv"
 	"os"
 	"strconv"
+	"time"
 )
 
 const (
-	tgToken    = "TELEGRAM_BOT_API_TOKEN"
-	serverPort = "SERVER_PORT"
-	restPort   = "REST_PORT"
-	debug      = "DEBUG"
+	tgToken                     = "TELEGRAM_BOT_API_TOKEN"
+	serverPort                  = "SERVER_PORT"
+	restPort                    = "REST_PORT"
+	debug                       = "DEBUG"
+	requestTimeOutInMilliSecond = "REQUEST_TIMEOUT_IN_MILLISECOND"
 )
 
 var singleInstance *Config
 
 type Config struct {
-	token      string
-	serverPort string
-	restPort   string
-	debug      bool
+	token                       string
+	serverPort                  string
+	restPort                    string
+	debug                       bool
+	requestTimeOutInMilliSecond time.Duration
 }
 
 func (c Config) Token() string {
@@ -39,6 +42,10 @@ func (c Config) Debug() bool {
 	return c.debug
 }
 
+func (c Config) RequestTimeOutInMilliSecond() time.Duration {
+	return c.requestTimeOutInMilliSecond
+}
+
 func init() {
 	if err := godotenv.Load(); err != nil {
 		fmt.Println("No .env file found.")
@@ -53,11 +60,13 @@ func GetConfig() *Config {
 }
 
 func new() *Config {
+	requestTimeOutInMilliSecond := getEnvAsInt64(requestTimeOutInMilliSecond, 500)
 	return &Config{
-		token:      getEnv(tgToken, ""),
-		serverPort: getEnv(serverPort, ""),
-		restPort:   getEnv(restPort, ""),
-		debug:      getEnvAsBool(debug, false),
+		token:                       getEnv(tgToken, ""),
+		serverPort:                  getEnv(serverPort, ""),
+		restPort:                    getEnv(restPort, ""),
+		debug:                       getEnvAsBool(debug, false),
+		requestTimeOutInMilliSecond: time.Duration(requestTimeOutInMilliSecond) * time.Millisecond,
 	}
 }
 
@@ -76,4 +85,12 @@ func getEnvAsBool(name string, defaultVal bool) bool {
 	}
 
 	return defaultVal
+}
+
+func getEnvAsInt64(name string, defaultValue int64) int64 {
+	value := getEnv(name, "")
+	if valueInt, err := strconv.Atoi(value); err == nil {
+		return int64(valueInt)
+	}
+	return defaultValue
 }
