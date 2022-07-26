@@ -65,16 +65,21 @@ func runREST(serverAddress, restAddress string) {
 
 	runtime.DefaultContextTimeout = requestTimeout
 
-	mux := runtime.NewServeMux(
+	rmux := runtime.NewServeMux(
 		runtime.WithIncomingHeaderMatcher(headerMatcherREST),
 	)
+
+	rmux.HandlePath("GET", "/swagger", func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+		http.ServeFile(w, r, "pkg/api/api.swagger.json")
+	})
+
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	if err := pb.RegisterCinemaHandlerFromEndpoint(ctx, mux, serverAddress, opts); err != nil {
+	if err := pb.RegisterCinemaHandlerFromEndpoint(ctx, rmux, serverAddress, opts); err != nil {
 		panic(err)
 	}
 
 	log.Println("Serving gRPC-Gateway on " + restAddress)
-	log.Fatalln(http.ListenAndServe(restAddress, mux))
+	log.Fatalln(http.ListenAndServe(restAddress, rmux))
 }
 
 func headerMatcherREST(key string) (string, bool) {

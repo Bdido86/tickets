@@ -1,0 +1,348 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "api.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Cinema"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/auth": {
+      "post": {
+        "operationId": "Cinema_UserAuth",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/apiUserAuthResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/apiUserAuthRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Cinema"
+        ]
+      }
+    },
+    "/v1/films": {
+      "get": {
+        "operationId": "Cinema_Films",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/apiFilmsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "Cinema"
+        ]
+      }
+    },
+    "/v1/films/{filmId}/room": {
+      "get": {
+        "operationId": "Cinema_FilmRoom",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/apiFilmRoomResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "filmId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Cinema"
+        ]
+      }
+    },
+    "/v1/films/{filmId}/room/{placeId}": {
+      "post": {
+        "operationId": "Cinema_TicketCreate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/apiTicketCreateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "filmId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "placeId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Cinema"
+        ]
+      }
+    },
+    "/v1/my-tickets": {
+      "get": {
+        "operationId": "Cinema_MyTickets",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/apiMyTicketsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "Cinema"
+        ]
+      }
+    },
+    "/v1/ticket/{ticketId}": {
+      "delete": {
+        "operationId": "Cinema_TicketDelete",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/apiTicketDeleteResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "ticketId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Cinema"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "FilmRoomResponsePlace": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "isMy": {
+          "type": "boolean"
+        },
+        "isFree": {
+          "type": "boolean"
+        }
+      }
+    },
+    "FilmRoomResponseRoom": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "places": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FilmRoomResponsePlace"
+          }
+        }
+      }
+    },
+    "apiFilm": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "apiFilmRoomResponse": {
+      "type": "object",
+      "properties": {
+        "film": {
+          "$ref": "#/definitions/apiFilm"
+        },
+        "room": {
+          "$ref": "#/definitions/FilmRoomResponseRoom"
+        }
+      }
+    },
+    "apiFilmsResponse": {
+      "type": "object",
+      "properties": {
+        "films": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/apiFilm"
+          }
+        }
+      }
+    },
+    "apiMyTicketsResponse": {
+      "type": "object",
+      "properties": {
+        "tickets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/apiTicket"
+          }
+        }
+      }
+    },
+    "apiTicket": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "filmId": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "roomId": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "placeId": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "apiTicketCreateResponse": {
+      "type": "object",
+      "properties": {
+        "ticket": {
+          "$ref": "#/definitions/apiTicket"
+        }
+      }
+    },
+    "apiTicketDeleteResponse": {
+      "type": "object"
+    },
+    "apiUserAuthRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "apiUserAuthResponse": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string"
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  }
+}
