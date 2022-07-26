@@ -1,6 +1,8 @@
 package storage
 
-import "fmt"
+import (
+	"fmt"
+)
 
 var lastUserId = uint(0)
 
@@ -20,6 +22,13 @@ func newUser(id uint, name string) *User {
 }
 
 func initUser(id uint, name string) *User {
+	poolChannel <- struct{}{}
+	mu.Lock()
+	defer func() {
+		mu.Unlock()
+		<-poolChannel
+	}()
+
 	user := newUser(id, name)
 	dataUsers[user.id] = user
 
@@ -27,6 +36,13 @@ func initUser(id uint, name string) *User {
 }
 
 func getUserByName(name string) *User {
+	poolChannel <- struct{}{}
+	mu.RLock()
+	defer func() {
+		mu.RUnlock()
+		<-poolChannel
+	}()
+
 	for _, user := range dataUsers {
 		if name == user.name {
 			return user
