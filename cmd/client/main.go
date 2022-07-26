@@ -11,6 +11,8 @@ import (
 )
 
 func main() {
+	const defaultName = "defaultName"
+
 	c := config.GetConfig()
 	if len(c.ServerPort()) == 0 {
 		log.Fatal("Config error: port is empty")
@@ -28,7 +30,7 @@ func main() {
 	ctx := context.Background()
 
 	request := &pb.UserAuthRequest{
-		Name: "dido",
+		Name: defaultName,
 	}
 
 	response, err := client.UserAuth(ctx, request)
