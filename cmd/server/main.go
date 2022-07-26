@@ -15,11 +15,14 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"time"
 )
 
 const (
 	tokenHeader = "Token"
 	authPathRPC = "UserAuth"
+
+	requestTimeout = 1 * time.Second
 )
 
 func main() {
@@ -59,6 +62,8 @@ func runREST(serverAddress, restAddress string) {
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	runtime.DefaultContextTimeout = requestTimeout
 
 	mux := runtime.NewServeMux(
 		runtime.WithIncomingHeaderMatcher(headerMatcherREST),
