@@ -35,5 +35,6 @@
 **Токен** получить можно командой `curl -X POST http://localhost:8090/v1/auth -d '{"name": "dima"}'`.  
 Далее в каждом запросе в **header** надо будет слать заголовок, например `Token: dido-1`
 
+#### Swagger (json)
 
-
+Сваггер доступен попути `http://localhost:8090/v1/swagger`. Порт береться из настройки окружения `REST_PORT=`

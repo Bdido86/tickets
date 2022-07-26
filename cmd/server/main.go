@@ -23,6 +23,9 @@ const (
 	authPathRPC = "UserAuth"
 
 	requestTimeout = 1 * time.Second
+
+	swaggerRoute = "/v1/swagger"
+	swaggerPath  = "pkg/api/api.swagger.json"
 )
 
 func main() {
@@ -69,8 +72,8 @@ func runREST(serverAddress, restAddress string) {
 		runtime.WithIncomingHeaderMatcher(headerMatcherREST),
 	)
 
-	rmux.HandlePath("GET", "/swagger", func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-		http.ServeFile(w, r, "pkg/api/api.swagger.json")
+	rmux.HandlePath("GET", swaggerRoute, func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+		http.ServeFile(w, r, swaggerPath)
 	})
 
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}

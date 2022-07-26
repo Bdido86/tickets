@@ -35,3 +35,9 @@ Token: dido-1
 GET http://localhost:8090/v1/my-tickets
 Content-Type: application/json
 Token: dido-1
+
+### Удаление билета номер 1
+
+DELETE http://localhost:8090/v1/ticket/1
+Content-Type: application/json
+Token: dido-1
