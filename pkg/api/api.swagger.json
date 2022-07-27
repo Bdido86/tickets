@@ -1,13 +1,22 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "api.proto",
-    "version": "version not set"
+    "title": "Movie ticket booking",
+    "description": "Сервис покупки билетов в кино",
+    "version": "1.0",
+    "contact": {
+      "name": "Baranov Dmitrii"
+    }
   },
   "tags": [
     {
       "name": "Cinema"
     }
+  ],
+  "host": "localhost:8090",
+  "basePath": "/",
+  "schemes": [
+    "http"
   ],
   "consumes": [
     "application/json"
@@ -18,13 +27,22 @@
   "paths": {
     "/v1/auth": {
       "post": {
-        "operationId": "Cinema_UserAuth",
+        "summary": "Получение token текущего пользователя",
+        "operationId": "getToken",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/apiUserAuthResponse"
             }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {}
+          },
+          "401": {
+            "description": "Token is invalid",
+            "schema": {}
           },
           "default": {
             "description": "An unexpected error response.",
@@ -44,13 +62,14 @@
           }
         ],
         "tags": [
-          "Cinema"
+          "token"
         ]
       }
     },
     "/v1/films": {
       "get": {
-        "operationId": "Cinema_Films",
+        "summary": "Список фильмов для показа",
+        "operationId": "getFilms",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -58,6 +77,14 @@
               "$ref": "#/definitions/apiFilmsResponse"
             }
           },
+          "400": {
+            "description": "Bad request",
+            "schema": {}
+          },
+          "401": {
+            "description": "Token is invalid",
+            "schema": {}
+          },
           "default": {
             "description": "An unexpected error response.",
             "schema": {
@@ -66,13 +93,14 @@
           }
         },
         "tags": [
-          "Cinema"
+          "film"
         ]
       }
     },
     "/v1/films/{filmId}/room": {
       "get": {
-        "operationId": "Cinema_FilmRoom",
+        "summary": "Список мест в зале",
+        "operationId": "getFilmRoom",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -80,6 +108,14 @@
               "$ref": "#/definitions/apiFilmRoomResponse"
             }
           },
+          "400": {
+            "description": "Bad request",
+            "schema": {}
+          },
+          "401": {
+            "description": "Token is invalid",
+            "schema": {}
+          },
           "default": {
             "description": "An unexpected error response.",
             "schema": {
@@ -97,13 +133,14 @@
           }
         ],
         "tags": [
-          "Cinema"
+          "film"
         ]
       }
     },
     "/v1/films/{filmId}/room/{placeId}": {
       "post": {
-        "operationId": "Cinema_TicketCreate",
+        "summary": "Покупка билета в кино(фильм, зал, место)",
+        "operationId": "createTicket",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -111,6 +148,14 @@
               "$ref": "#/definitions/apiTicketCreateResponse"
             }
           },
+          "400": {
+            "description": "Bad request",
+            "schema": {}
+          },
+          "401": {
+            "description": "Token is invalid",
+            "schema": {}
+          },
           "default": {
             "description": "An unexpected error response.",
             "schema": {
@@ -121,6 +166,7 @@
         "parameters": [
           {
             "name": "filmId",
+            "description": "Фильм на который покупается билет",
             "in": "path",
             "required": true,
             "type": "string",
@@ -128,6 +174,7 @@
           },
           {
             "name": "placeId",
+            "description": "Место в кинотеатре",
             "in": "path",
             "required": true,
             "type": "string",
@@ -135,19 +182,28 @@
           }
         ],
         "tags": [
-          "Cinema"
+          "ticket"
         ]
       }
     },
     "/v1/my-tickets": {
       "get": {
-        "operationId": "Cinema_MyTickets",
+        "summary": "Список билетов пользователя",
+        "operationId": "myTickets",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/apiMyTicketsResponse"
             }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {}
+          },
+          "401": {
+            "description": "Token is invalid",
+            "schema": {}
           },
           "default": {
             "description": "An unexpected error response.",
@@ -157,19 +213,28 @@
           }
         },
         "tags": [
-          "Cinema"
+          "user"
         ]
       }
     },
     "/v1/ticket/{ticketId}": {
       "delete": {
-        "operationId": "Cinema_TicketDelete",
+        "summary": "Удаление билет",
+        "operationId": "deleteTicket",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/apiTicketDeleteResponse"
             }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {}
+          },
+          "401": {
+            "description": "Token is invalid",
+            "schema": {}
           },
           "default": {
             "description": "An unexpected error response.",
@@ -181,6 +246,7 @@
         "parameters": [
           {
             "name": "ticketId",
+            "description": "Билет который будет удален",
             "in": "path",
             "required": true,
             "type": "string",
@@ -188,7 +254,7 @@
           }
         ],
         "tags": [
-          "Cinema"
+          "ticket"
         ]
       }
     }
@@ -199,13 +265,24 @@
       "properties": {
         "id": {
           "type": "string",
-          "format": "uint64"
+          "format": "integer",
+          "example": 10,
+          "description": "Место в зале кинотеатра",
+          "title": "ID записи"
         },
         "isMy": {
-          "type": "boolean"
+          "type": "boolean",
+          "format": "boolean",
+          "example": false,
+          "description": "Принадлежит ли это место текущему пользователю",
+          "title": "Мое ли место"
         },
         "isFree": {
-          "type": "boolean"
+          "type": "boolean",
+          "format": "boolean",
+          "example": true,
+          "description": "Если место свободно, то его можно купить",
+          "title": "Место свободно ли"
         }
       }
     },
@@ -214,13 +291,17 @@
       "properties": {
         "id": {
           "type": "string",
-          "format": "uint64"
+          "format": "integer",
+          "example": 1,
+          "title": "ID записи"
         },
         "places": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/FilmRoomResponsePlace"
-          }
+          },
+          "description": "Список мест в зале кинотеатра",
+          "title": "Список мест в зале"
         }
       }
     },
@@ -229,10 +310,15 @@
       "properties": {
         "id": {
           "type": "string",
-          "format": "uint64"
+          "format": "integer",
+          "example": 1,
+          "title": "ID записи"
         },
         "name": {
-          "type": "string"
+          "type": "string",
+          "format": "string",
+          "example": "Человек паук 2",
+          "title": "Название фильма"
         }
       }
     },
@@ -254,7 +340,9 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/apiFilm"
-          }
+          },
+          "description": "Получение списков фильмов",
+          "title": "Список фильмов"
         }
       }
     },
@@ -265,7 +353,9 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/apiTicket"
-          }
+          },
+          "description": "Список моих билетов",
+          "title": "Список моих билетов"
         }
       }
     },
@@ -274,19 +364,27 @@
       "properties": {
         "id": {
           "type": "string",
-          "format": "uint64"
+          "format": "integer",
+          "example": 1,
+          "title": "ID записи"
         },
         "filmId": {
           "type": "string",
-          "format": "uint64"
+          "format": "integer",
+          "example": 2,
+          "title": "ID записи"
         },
         "roomId": {
           "type": "string",
-          "format": "uint64"
+          "format": "integer",
+          "example": 3,
+          "title": "ID записи"
         },
         "placeId": {
           "type": "string",
-          "format": "uint64"
+          "format": "integer",
+          "example": 4,
+          "title": "ID записи"
         }
       }
     },
@@ -305,15 +403,28 @@
       "type": "object",
       "properties": {
         "name": {
-          "type": "string"
+          "type": "string",
+          "format": "string",
+          "example": "default",
+          "title": "Имя пользователя",
+          "required": [
+            "name"
+          ]
         }
-      }
+      },
+      "required": [
+        "name"
+      ]
     },
     "apiUserAuthResponse": {
       "type": "object",
       "properties": {
         "token": {
-          "type": "string"
+          "type": "string",
+          "format": "string",
+          "example": "ivan-1",
+          "description": "Получение token для остальных запросов",
+          "title": "Полученый токен пользователя"
         }
       }
     },
@@ -343,6 +454,13 @@
           }
         }
       }
+    }
+  },
+  "securityDefinitions": {
+    "Bearer": {
+      "type": "apiKey",
+      "name": "Token",
+      "in": "header"
     }
   }
 }
