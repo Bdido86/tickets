@@ -1,0 +1,43 @@
+### Получение token. При первом запуске token="dido-1"(name-id). Его дальше в др запрос и проставляем
+POST http://localhost:8090/v1/auth
+Content-Type: application/json
+
+{
+  "name": "dido"
+}
+
+### Список фильмов
+
+GET http://localhost:8090/v1/films
+Content-Type: application/json
+Token: dido-1
+
+### Список мест в зале для выбранного фильма
+
+GET http://localhost:8090/v1/films/5/room
+Content-Type: application/json
+Token: dido-1
+
+### Выбор места в зале(покупка билета)
+
+POST http://localhost:8090/v1/films/5/room/3
+Content-Type: application/json
+Token: dido-1
+
+### Выбор места в зале(покупка билета)
+
+POST http://localhost:8090/v1/films/1/room/2
+Content-Type: application/json
+Token: dido-1
+
+### Список мох билетов
+
+GET http://localhost:8090/v1/my-tickets
+Content-Type: application/json
+Token: dido-1
+
+### Удаление билета номер 1
+
+DELETE http://localhost:8090/v1/ticket/1
+Content-Type: application/json
+Token: dido-1

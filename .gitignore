@@ -1,2 +1,5 @@
 .idea
 .env
+
+/api/google
+/api/protoc-gen-openapiv2

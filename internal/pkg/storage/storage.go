@@ -3,12 +3,19 @@ package storage
 import (
 	"github.com/pkg/errors"
 	"math/rand"
+	"sync"
 )
 
+const poolSize = 10
+
+var poolChannel chan struct{}
 var dataUsers map[uint]*User
 var dataRooms map[uint]*Room
+var mu sync.RWMutex
 
 func init() {
+	mu = sync.RWMutex{}
+	poolChannel = make(chan struct{}, poolSize)
 	dataUsers = make(map[uint]*User)
 	dataRooms = make(map[uint]*Room)
 
@@ -31,6 +38,13 @@ func init() {
 }
 
 func GetRoom(filmId uint) (*Room, error) {
+	poolChannel <- struct{}{}
+	mu.RLock()
+	defer func() {
+		mu.RUnlock()
+		<-poolChannel
+	}()
+
 	room, ok := dataRooms[filmId]
 	if !ok {
 		return nil, errors.New("Bad film ID, empty room for film")
@@ -44,15 +58,49 @@ func InitCurrentUser(id uint, name string) {
 		return
 	}
 
-	user := newUser(id, name)
-	dataUsers[user.id] = user
+	initUser(id, name)
+}
+
+func AuthUser(name string) string {
+	return getAuthToken(name)
+}
+
+func IsValidToken(token string) bool {
+	poolChannel <- struct{}{}
+	mu.RLock()
+	defer func() {
+		mu.RUnlock()
+		<-poolChannel
+	}()
+
+	for _, user := range dataUsers {
+		if token == getToken(user) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func GetFilms() map[uint]string {
+	poolChannel <- struct{}{}
+	mu.RLock()
+	defer func() {
+		mu.RUnlock()
+		<-poolChannel
+	}()
+
 	return films
 }
 
 func BuyTicket(filmId, placeId, userId uint) (*Ticket, error) {
+	poolChannel <- struct{}{}
+	mu.Lock()
+	defer func() {
+		mu.Unlock()
+		<-poolChannel
+	}()
+
 	place, ok := dataRooms[filmId].places[placeId]
 	if !ok {
 		return nil, errors.New("Place ID not found")
@@ -70,6 +118,13 @@ func BuyTicket(filmId, placeId, userId uint) (*Ticket, error) {
 }
 
 func GetTickets(userId uint) (map[uint]*Ticket, error) {
+	poolChannel <- struct{}{}
+	mu.RLock()
+	defer func() {
+		mu.RUnlock()
+		<-poolChannel
+	}()
+
 	user, ok := dataUsers[userId]
 	if !ok {
 		return nil, errors.New("User not found")
@@ -78,7 +133,14 @@ func GetTickets(userId uint) (map[uint]*Ticket, error) {
 	return user.tickets, nil
 }
 
-func ReturnTicket(userId uint, ticketId uint) error {
+func DeleteTicket(userId uint, ticketId uint) error {
+	poolChannel <- struct{}{}
+	mu.Lock()
+	defer func() {
+		mu.Unlock()
+		<-poolChannel
+	}()
+
 	user, ok := dataUsers[userId]
 	if !ok {
 		return errors.New("User not found")

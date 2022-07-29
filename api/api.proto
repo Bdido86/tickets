@@ -1,0 +1,282 @@
+syntax = "proto3";
+
+package api;
+option go_package = "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api;api";
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Movie ticket booking"
+    version: "1.0"
+    description: "Сервис покупки билетов в кино"
+    contact: {
+      name: "Baranov Dmitrii"
+    };
+  };
+  host: "localhost:8090"
+  base_path: "/"
+  schemes: [HTTP]
+  consumes: "application/json"
+  produces: "application/json"
+  security_definitions: {
+    security: {
+      key: "Bearer";
+      value: {
+        type: TYPE_API_KEY;
+        in: IN_HEADER;
+        name: "Token";
+      }
+    }
+  }
+  responses: {
+    // Overwrites global definition.
+    key: "401";
+    value: {
+      description: "Token is invalid";
+    }
+  }
+  responses: {
+    // Overwrites global definition.
+    key: "400";
+    value: {
+      description: "Bad request";
+    }
+  }
+};
+
+service Cinema {
+  rpc UserAuth (UserAuthRequest) returns (UserAuthResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Получение token текущего пользователя";
+      operation_id: "getToken";
+      tags: "token";
+    };
+  };
+
+  rpc Films (FilmsRequest) returns (FilmsResponse) {
+    option (google.api.http) = {
+      get: "/v1/films"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Список фильмов для показа";
+      operation_id: "getFilms";
+      tags: "film";
+    };
+  };
+
+  rpc FilmRoom (FilmRoomRequest) returns (FilmRoomResponse) {
+    option (google.api.http) = {
+      get: "/v1/films/{film_id}/room"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Список мест в зале";
+      operation_id: "getFilmRoom";
+      tags: "film";
+    };
+  };
+
+  rpc TicketCreate (TicketCreateRequest) returns (TicketCreateResponse) {
+    option (google.api.http) = {
+      post: "/v1/films/{film_id}/room/{place_id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Покупка билета в кино(фильм, зал, место)";
+      operation_id: "createTicket";
+      tags: "ticket";
+    };
+  };
+
+  rpc TicketDelete (TicketDeleteRequest) returns (TicketDeleteResponse) {
+    option (google.api.http) = {
+      delete: "/v1/ticket/{ticket_id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Удаление билет";
+      operation_id: "deleteTicket";
+      tags: "ticket";
+    };
+  };
+
+  rpc MyTickets (MyTicketsRequest) returns (MyTicketsResponse) {
+    option (google.api.http) = {
+      get: "/v1/my-tickets"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Список билетов пользователя";
+      operation_id: "myTickets";
+      tags: "user";
+    };
+  };
+}
+
+message Film {
+  uint64 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    title: "ID записи",
+    format: "integer"
+    example: "1",
+  }];
+  string name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    title: "Название фильма",
+    format: "string",
+    example: "\"Человек паук 2\"",
+  }];
+}
+
+message Ticket {
+  uint64 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    title: "ID записи",
+    format: "integer"
+    example: "1",
+  }];
+  uint64 filmId = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    title: "ID записи",
+    format: "integer"
+    example: "2",
+  }];
+  uint64 roomId = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    title: "ID записи",
+    format: "integer"
+    example: "3",
+  }];
+  uint64 placeId = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    title: "ID записи",
+    format: "integer"
+    example: "4",
+  }];
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// UserAuth endpoint messages
+// ---------------------------------------------------------------------------------------------------------------------
+
+message UserAuthRequest {
+  string name = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    title: "Имя пользователя",
+    format: "string",
+    example: "\"default\"",
+    required: ["name"]
+  }];
+}
+message UserAuthResponse {
+  string token = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    title: "Полученый токен пользователя",
+    description: "Получение token для остальных запросов",
+    format: "string",
+    example: "\"ivan-1\""
+  }];
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Films endpoint messages
+// ---------------------------------------------------------------------------------------------------------------------
+
+message FilmsRequest {}
+message FilmsResponse {
+  repeated Film films = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    title: "Список фильмов",
+    description: "Получение списков фильмов",
+  }];
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// FilmRoom endpoint messages
+// ---------------------------------------------------------------------------------------------------------------------
+
+message FilmRoomRequest {
+  uint64 film_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    title: "ID фильма",
+    format: "integer"
+    example: "5"
+  }];
+}
+message FilmRoomResponse {
+  Film film = 1;
+  Room room = 2;
+
+  message Room {
+    uint64 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      title: "ID записи",
+      format: "integer"
+      example: "1"
+    }];
+    repeated Place places = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      title: "Список мест в зале",
+      description: "Список мест в зале кинотеатра",
+    }];
+  }
+
+  message Place {
+    uint64 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      title: "ID записи",
+      description: "Место в зале кинотеатра",
+      format: "integer"
+      example: "10"
+    }];
+    bool isMy = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      title: "Мое ли место",
+      description: "Принадлежит ли это место текущему пользователю",
+      format: "boolean",
+      example: "false"
+    }];
+    bool isFree = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      title: "Место свободно ли",
+      description: "Если место свободно, то его можно купить",
+      format: "boolean",
+      example: "true"
+    }];
+  }
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// TicketCreate endpoint messages
+// ---------------------------------------------------------------------------------------------------------------------
+
+message TicketCreateRequest {
+  uint64 film_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    title: "ID записи",
+    description: "Фильм на который покупается билет",
+    format: "integer"
+    example: "4"
+  }];
+  uint64 place_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    title: "ID записи",
+    description: "Место в кинотеатре",
+    format: "integer"
+    example: "8"
+  }];
+}
+message TicketCreateResponse {
+  Ticket ticket = 1;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// TicketDelete endpoint messages
+// ---------------------------------------------------------------------------------------------------------------------
+
+message TicketDeleteRequest {
+  uint64 ticket_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    title: "ID записи",
+    description: "Билет который будет удален",
+    format: "integer"
+    example: "10"
+  }];
+}
+message TicketDeleteResponse {}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// MyTickets endpoint messages
+// ---------------------------------------------------------------------------------------------------------------------
+
+message MyTicketsRequest {}
+message MyTicketsResponse {
+  repeated Ticket tickets = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    title: "Список моих билетов",
+    description: "Список моих билетов",
+  }];
+}

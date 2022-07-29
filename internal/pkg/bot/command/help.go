@@ -1,4 +1,4 @@
-package handlers
+package command
 
 func helpFunc() string {
 	return `

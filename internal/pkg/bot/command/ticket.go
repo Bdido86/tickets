@@ -1,7 +1,7 @@
-package handlers
+package command
 
 import (
-	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/storage"
+	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/storage"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/tools"
 	"strconv"
 )
@@ -38,7 +38,7 @@ func ticketFunc(arguments []string, userId uint) (res string) {
 	}
 
 	ticketId := uint(ticketId64)
-	err = storage.ReturnTicket(userId, ticketId)
+	err = storage.DeleteTicket(userId, ticketId)
 	if err != nil {
 		return err.Error()
 	}

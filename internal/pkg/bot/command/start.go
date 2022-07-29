@@ -1,7 +1,7 @@
-package handlers
+package command
 
 import (
-	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/storage"
+	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/storage"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/tools"
 )
 
