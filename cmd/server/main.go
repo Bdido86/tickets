@@ -22,8 +22,7 @@ const (
 	tokenHeader = "Token"
 	authPathRPC = "UserAuth"
 
-	swaggerRoute = "/v1/swagger"
-	swaggerPath  = "pkg/api/api.swagger.json"
+	swaggerDir = "./swagger"
 )
 
 func main() {
@@ -65,14 +64,16 @@ func runREST(serverAddress, restAddress string, requestTimeoutInMilliSecond time
 	defer cancel()
 
 	runtime.DefaultContextTimeout = requestTimeoutInMilliSecond
-
 	rmux := runtime.NewServeMux(
 		runtime.WithIncomingHeaderMatcher(headerMatcherREST),
 	)
 
-	rmux.HandlePath("GET", swaggerRoute, func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-		http.ServeFile(w, r, swaggerPath)
-	})
+	// Swagger server
+	mux := http.NewServeMux()
+	mux.Handle("/", rmux)
+
+	fs := http.FileServer(http.Dir(swaggerDir))
+	mux.Handle("/swagger/", http.StripPrefix("/swagger/", fs))
 
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	if err := pb.RegisterCinemaHandlerFromEndpoint(ctx, rmux, serverAddress, opts); err != nil {
@@ -80,7 +81,7 @@ func runREST(serverAddress, restAddress string, requestTimeoutInMilliSecond time
 	}
 
 	log.Println("Serving gRPC-Gateway on " + restAddress)
-	log.Fatalln(http.ListenAndServe(restAddress, rmux))
+	log.Fatalln(http.ListenAndServe(restAddress, mux))
 }
 
 func headerMatcherREST(key string) (string, bool) {

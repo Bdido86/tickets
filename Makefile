@@ -23,4 +23,4 @@ run-client:
 
 .PHONY: .swagger
 .swagger:
-	protoc -I ./api --openapiv2_out ./pkg/api --openapiv2_opt logtostderr=true ./api/api.proto
+	protoc -I ./api --openapiv2_out ./swagger/api --openapiv2_opt logtostderr=true ./api/api.proto
