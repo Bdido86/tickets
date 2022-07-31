@@ -1,0 +1,17 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:14.4
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DB}
+    container_name: 'postgresql-movie-tickets'
+    volumes:
+      - ./postgres/data:/var/lib/postgresql/data # том для того, чтобы при перезапуске контейнера все данные сохранялись
+      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf # конфиг БД
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    ports:
+      - "5432:5432"
+    restart: always

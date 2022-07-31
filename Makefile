@@ -1,4 +1,4 @@
-.PHONY: run-bot run-server
+.PHONY: run-bot run-server run-client
 
 run-bot:
 	go run cmd/bot/main.go
@@ -8,6 +8,13 @@ run-server:
 
 run-client:
 	go run cmd/client/main.go
+
+docker-up:
+	docker-compose -f ".docker/docker-compose.yml" --env-file .env up -d
+
+docker-down:
+	docker-compose -f ".docker/docker-compose.yml" --env-file .env down
+
 
 .PHONY: .dev-toolscd
 .dev-tools:
@@ -24,3 +31,8 @@ run-client:
 .PHONY: .swagger
 .swagger:
 	protoc -I ./api --openapiv2_out ./swagger/api --openapiv2_opt logtostderr=true ./api/api.proto
+
+.PHONY: .buf-generate
+.buf-generate:
+	buf mod update
+	buf generate
