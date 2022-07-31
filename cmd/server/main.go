@@ -22,7 +22,7 @@ const (
 	tokenHeader = "Token"
 	authPathRPC = "UserAuth"
 
-	swaggerDir = "./swagger"
+	swaggerDir = "./third_party/swagger-ui"
 )
 
 func main() {
