@@ -22,7 +22,7 @@ migration:
 	goose -dir=${GOOSE_MIGRATION_DIR} create $(name) sql
 migrate:
 	goose -dir=${GOOSE_MIGRATION_DIR} ${GOOSE_DRIVER} ${GOOSE_DBSTRING} up
-migrate-dry:
+migrate-status:
 	goose -dir=${GOOSE_MIGRATION_DIR} ${GOOSE_DRIVER} ${GOOSE_DBSTRING} status
 
 
