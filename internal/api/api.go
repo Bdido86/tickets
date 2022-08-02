@@ -127,9 +127,9 @@ func (s *server) TicketDelete(ctx context.Context, in *pb.TicketDeleteRequest) (
 	ticket64 := in.GetTicketId()
 	ticketId := uint(ticket64)
 
-	err := storage.DeleteTicket(getUserIdFromToken(ctx), ticketId)
+	err := s.CinemaRepository.DeleteTicket(ctx, ticketId, getCurrentUserId(ctx))
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "Field: [ticket_id] not found")
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &pb.TicketDeleteResponse{}, nil

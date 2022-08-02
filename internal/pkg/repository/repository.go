@@ -13,4 +13,5 @@ type Cinema interface {
 	GetUserIdByToken(ctx context.Context, token string) (uint, error)
 
 	GetMyTickets(ctx context.Context, currentUserId uint) ([]models.Ticket, error)
+	DeleteTicket(ctx context.Context, ticketId uint, currentUserId uint) error
 }
