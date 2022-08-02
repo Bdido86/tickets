@@ -74,12 +74,12 @@ func (r *Repository) GetFilmRoom(ctx context.Context, filmId uint, currentUserId
 	if err != nil {
 		return filmRoom, errors.Wrap(err, "Repository.GetFilms.tickets")
 	}
-	var tickets []models.TicketDb
+	var tickets []models.Ticket
 	if err := pgxscan.Select(ctx, r.pool, &tickets, query, args...); err != nil {
 		return filmRoom, errors.Wrap(err, "Repository.GetFilms.tickets: error scan")
 	}
 
-	ticketsByPlaceId := make(map[uint64]models.TicketDb)
+	ticketsByPlaceId := make(map[uint64]models.Ticket)
 	for _, ticket := range tickets {
 		ticketsByPlaceId[ticket.Place] = ticket
 	}

@@ -65,9 +65,8 @@ func (s *server) Films(ctx context.Context, _ *pb.FilmsRequest) (*pb.FilmsRespon
 func (s *server) FilmRoom(ctx context.Context, in *pb.FilmRoomRequest) (*pb.FilmRoomResponse, error) {
 	film64 := in.GetFilmId()
 	filmId := uint(film64)
-	currentUserId := ctx.Value("userId").(uint)
 
-	filmRoom, err := s.CinemaRepository.GetFilmRoom(ctx, filmId, currentUserId)
+	filmRoom, err := s.CinemaRepository.GetFilmRoom(ctx, filmId, getCurrentUserId(ctx))
 	if err != nil {
 		return &pb.FilmRoomResponse{}, errors.Wrap(err, "error FilmRoom")
 	}
@@ -137,15 +136,18 @@ func (s *server) TicketDelete(ctx context.Context, in *pb.TicketDeleteRequest) (
 }
 
 func (s *server) MyTickets(ctx context.Context, _ *pb.MyTicketsRequest) (*pb.MyTicketsResponse, error) {
-	tickets, _ := storage.GetTickets(getUserIdFromToken(ctx))
+	tickets, err := s.CinemaRepository.GetMyTickets(ctx, getCurrentUserId(ctx))
+	if err != nil {
+		return &pb.MyTicketsResponse{}, errors.Wrap(err, "Error MyTickets")
+	}
 
 	ticketsResponse := make([]*pb.Ticket, 0, len(tickets))
 	for _, ticket := range tickets {
 		ticketsResponse = append(ticketsResponse, &pb.Ticket{
-			Id:      uint64(ticket.GetId()),
-			FilmId:  uint64(ticket.GetFilmId()),
-			RoomId:  uint64(ticket.GetRoomId()),
-			PlaceId: uint64(ticket.GetPlaceId()),
+			Id:      ticket.Id,
+			FilmId:  ticket.FilmId,
+			RoomId:  ticket.RoomId,
+			PlaceId: ticket.Place,
 		})
 	}
 
@@ -162,4 +164,8 @@ func getUserIdFromToken(ctx context.Context) uint {
 	id, _ := strconv.Atoi(words[1])
 
 	return uint(id)
+}
+
+func getCurrentUserId(ctx context.Context) uint {
+	return ctx.Value("userId").(uint)
 }

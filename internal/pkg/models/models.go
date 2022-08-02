@@ -32,7 +32,7 @@ type RoomDb struct {
 	CountPlaces uint64 `json:"count_places" db:"count_places"`
 }
 
-type TicketDb struct {
+type Ticket struct {
 	Id     uint64 `json:"id" db:"id"`
 	UserId uint64 `json:"user_id" db:"user_id"`
 	FilmId uint64 `json:"film_id" db:"film_id"`
