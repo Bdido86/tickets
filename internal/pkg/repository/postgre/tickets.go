@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/pkg/errors"
@@ -64,4 +65,66 @@ func (r *Repository) DeleteTicket(ctx context.Context, ticketId uint, currentUse
 	}
 
 	return nil
+}
+
+func (r *Repository) CreateTicket(ctx context.Context, filmId uint, placeId uint, currentUserId uint) (models.Ticket, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	var ticket models.Ticket
+
+	query, args, err := squirrel.Select("*").
+		From("films").
+		Where(
+			squirrel.Eq{"id": filmId},
+		).PlaceholderFormat(squirrel.Dollar).ToSql()
+	if err != nil {
+		return ticket, errors.Wrap(err, "Repository.CreateTicket.SelectFilm")
+	}
+	var film models.Film
+	if err := pgxscan.Get(ctx, r.pool, &film, query, args...); err != nil {
+		return ticket, errors.Wrap(err, "Repository.CreateTicket.SelectFilm: film not found")
+	}
+
+	query, args, err = squirrel.Select("rooms.*").
+		From("film_room").
+		Join("rooms ON film_room.room_id=rooms.id").
+		Where(
+			squirrel.Eq{"film_room.film_id": film.Id},
+		).
+		PlaceholderFormat(squirrel.Dollar).ToSql()
+	if err != nil {
+		return ticket, errors.Wrap(err, "Repository.CreateTicket.SelectFilmRoom")
+	}
+	var roomDb models.RoomDb
+	if err := pgxscan.Get(ctx, r.pool, &roomDb, query, args...); err != nil {
+		if pgxscan.NotFound(err) {
+			return ticket, errors.Wrap(err, "Repository.CreateTicket.SelectFilmRoom: film_room not found")
+		}
+		return ticket, errors.Wrap(err, "Repository.CreateTicket.SelectFilmRoom")
+	}
+	if placeId > uint(roomDb.CountPlaces) {
+		return ticket, errors.Wrap(err, "Repository.CreateTicket.SelectFilmRoom: place not exist in room")
+	}
+
+	query, args, err = squirrel.Select("*").
+		From("tickets").
+		Where(
+			squirrel.Eq{"film_id": film.Id, "room_id": roomDb.Id, "place": placeId},
+		).
+		PlaceholderFormat(squirrel.Dollar).ToSql()
+	if err != nil {
+		return ticket, errors.Wrap(err, "Repository.CreateTicket.SelectTickets")
+	}
+
+	if err := pgxscan.Get(ctx, r.pool, &ticket, query, args...); err != nil {
+		if !pgxscan.NotFound(err) {
+			return ticket, errors.Wrap(err, "Repository.CreateTicket.SelectFilmRoom: seat is taken")
+		}
+
+		return ticket, errors.Wrap(err, "Repository.CreateTicket.SelectFilmRoom")
+	}
+
+	fmt.Printf("%+v\n", roomDb)
+	return ticket, errors.Wrap(err, "Repository.CreateTicket: seat is taken")
 }

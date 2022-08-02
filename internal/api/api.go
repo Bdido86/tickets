@@ -4,13 +4,9 @@ import (
 	"context"
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/repository"
-	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/storage"
 	pb "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"strconv"
-	"strings"
 )
 
 type server struct {
@@ -53,7 +49,7 @@ func (s *server) Films(ctx context.Context, _ *pb.FilmsRequest) (*pb.FilmsRespon
 	result := make([]*pb.Film, 0, len(films))
 	for _, film := range films {
 		result = append(result, &pb.Film{
-			Id:   uint64(film.Id),
+			Id:   film.Id,
 			Name: film.Name,
 		})
 	}
@@ -102,23 +98,17 @@ func (s *server) TicketCreate(ctx context.Context, in *pb.TicketCreateRequest) (
 	filmId := uint(film64)
 	placeId := uint(place64)
 
-	films := storage.GetFilms()
-	_, ok := films[filmId]
-	if !ok {
-		return nil, status.Error(codes.InvalidArgument, "Field: [film_id] not found")
-	}
-
-	ticket, err := storage.BuyTicket(filmId, placeId, getUserIdFromToken(ctx))
+	ticket, err := s.CinemaRepository.CreateTicket(ctx, filmId, placeId, getCurrentUserId(ctx))
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &pb.TicketCreateResponse{
 		Ticket: &pb.Ticket{
-			Id:      uint64(ticket.GetId()),
-			FilmId:  uint64(ticket.GetFilmId()),
-			RoomId:  uint64(ticket.GetRoomId()),
-			PlaceId: uint64(ticket.GetPlaceId()),
+			Id:      ticket.Id,
+			FilmId:  ticket.FilmId,
+			RoomId:  ticket.RoomId,
+			PlaceId: ticket.Place,
 		},
 	}, nil
 }
@@ -154,16 +144,6 @@ func (s *server) MyTickets(ctx context.Context, _ *pb.MyTicketsRequest) (*pb.MyT
 	return &pb.MyTicketsResponse{
 		Tickets: ticketsResponse,
 	}, nil
-}
-
-func getUserIdFromToken(ctx context.Context) uint {
-	metaData, _ := metadata.FromIncomingContext(ctx)
-
-	tokens := metaData.Get("Token")
-	words := strings.Split(tokens[0], "-")
-	id, _ := strconv.Atoi(words[1])
-
-	return uint(id)
 }
 
 func getCurrentUserId(ctx context.Context) uint {
