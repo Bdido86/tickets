@@ -94,7 +94,7 @@ func (r *Repository) CreateTicket(ctx context.Context, filmId uint, placeId uint
 		).
 		PlaceholderFormat(squirrel.Dollar).ToSql()
 	if err != nil {
-		return ticket, errors.Wrap(err, "Repository.CreateTicket.SelectFilmRoom")
+		return ticket, errors.Wrap(err, "Repository.CreateTicket.SelectFilmRoom query")
 	}
 	var roomDb models.RoomDb
 	if err := pgxscan.Get(ctx, r.pool, &roomDb, query, args...); err != nil {
@@ -104,7 +104,7 @@ func (r *Repository) CreateTicket(ctx context.Context, filmId uint, placeId uint
 		return ticket, errors.Wrap(err, "Repository.CreateTicket.SelectFilmRoom")
 	}
 	if placeId > uint(roomDb.CountPlaces) {
-		return ticket, errors.Wrap(err, "Repository.CreateTicket.SelectFilmRoom: place not exist in room")
+		return ticket, errors.New("Repository.CreateTicket.SelectFilmRoom: place not exist in room")
 	}
 
 	query, args, err = squirrel.Select("*").
@@ -119,12 +119,24 @@ func (r *Repository) CreateTicket(ctx context.Context, filmId uint, placeId uint
 
 	if err := pgxscan.Get(ctx, r.pool, &ticket, query, args...); err != nil {
 		if !pgxscan.NotFound(err) {
-			return ticket, errors.Wrap(err, "Repository.CreateTicket.SelectFilmRoom: seat is taken")
+			return ticket, errors.Wrap(err, "Repository.CreateTicket.SelectTickets")
 		}
-
-		return ticket, errors.Wrap(err, "Repository.CreateTicket.SelectFilmRoom")
+		fmt.Printf("%+v\n", ticket)
+		query, args, err = squirrel.Insert("tickets").
+			Columns("user_id, film_id, room_id, place").
+			Values(currentUserId, filmId, roomDb.Id, placeId).
+			Suffix("RETURNING id, user_id, film_id, room_id, place").
+			PlaceholderFormat(squirrel.Dollar).
+			ToSql()
+		if err != nil {
+			return ticket, errors.Wrap(err, "Repository.createUser: to sql")
+		}
+		row := r.pool.QueryRow(ctx, query, args...)
+		if err := row.Scan(&ticket.Id, &ticket.UserId, &ticket.FilmId, &ticket.RoomId, &ticket.Place); err != nil {
+			return ticket, errors.Wrap(err, "Repository.CreateTicket.Insert")
+		}
+		return ticket, nil
 	}
 
-	fmt.Printf("%+v\n", roomDb)
-	return ticket, errors.Wrap(err, "Repository.CreateTicket: seat is taken")
+	return models.Ticket{}, errors.New("Repository.CreateTicket: seat is taken")
 }
