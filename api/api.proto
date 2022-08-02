@@ -84,6 +84,12 @@ service Cinema {
       summary: "Список мест в зале";
       operation_id: "getFilmRoom";
       tags: "film";
+      security: {
+        security_requirement: {
+          key: "Bearer";
+          value: {}
+        }
+      }
     };
   };
 
@@ -95,6 +101,12 @@ service Cinema {
       summary: "Покупка билета в кино(фильм, зал, место)";
       operation_id: "createTicket";
       tags: "ticket";
+      security: {
+        security_requirement: {
+          key: "Bearer";
+          value: {}
+        }
+      }
     };
   };
 
@@ -106,6 +118,12 @@ service Cinema {
       summary: "Удаление билет";
       operation_id: "deleteTicket";
       tags: "ticket";
+      security: {
+        security_requirement: {
+          key: "Bearer";
+          value: {}
+        }
+      }
     };
   };
 
@@ -117,6 +135,12 @@ service Cinema {
       summary: "Список билетов пользователя";
       operation_id: "myTickets";
       tags: "user";
+      security: {
+        security_requirement: {
+          key: "Bearer";
+          value: {}
+        }
+      }
     };
   };
 }

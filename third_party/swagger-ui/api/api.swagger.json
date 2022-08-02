@@ -139,6 +139,11 @@
         ],
         "tags": [
           "film"
+        ],
+        "security": [
+          {
+            "Bearer": []
+          }
         ]
       }
     },
@@ -188,6 +193,11 @@
         ],
         "tags": [
           "ticket"
+        ],
+        "security": [
+          {
+            "Bearer": []
+          }
         ]
       }
     },
@@ -219,6 +229,11 @@
         },
         "tags": [
           "user"
+        ],
+        "security": [
+          {
+            "Bearer": []
+          }
         ]
       }
     },
@@ -260,6 +275,11 @@
         ],
         "tags": [
           "ticket"
+        ],
+        "security": [
+          {
+            "Bearer": []
+          }
         ]
       }
     }
