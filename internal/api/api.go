@@ -40,8 +40,12 @@ func (s *server) UserAuth(ctx context.Context, in *pb.UserAuthRequest) (*pb.User
 	}, nil
 }
 
-func (s *server) Films(ctx context.Context, _ *pb.FilmsRequest) (*pb.FilmsResponse, error) {
-	films, err := s.CinemaRepository.GetFilms(ctx)
+func (s *server) Films(ctx context.Context, in *pb.FilmsRequest) (*pb.FilmsResponse, error) {
+	limit64 := in.GetLimit()
+	offset64 := in.GetOffset()
+	desc := in.GetDesc()
+
+	films, err := s.CinemaRepository.GetFilms(ctx, limit64, offset64, desc)
 	if err != nil {
 		return &pb.FilmsResponse{}, errors.Wrap(err, "error Films")
 	}

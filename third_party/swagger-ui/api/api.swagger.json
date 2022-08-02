@@ -92,6 +92,33 @@
             }
           }
         },
+        "parameters": [
+          {
+            "name": "limit",
+            "description": "Параметр сколько выбрать записей",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "integer"
+          },
+          {
+            "name": "offset",
+            "description": "Параметр с какой записи выводить",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "integer"
+          },
+          {
+            "name": "desc",
+            "description": "Тип сортировки по имени",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean",
+            "default": "false"
+          }
+        ],
         "tags": [
           "film"
         ],

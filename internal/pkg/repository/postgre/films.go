@@ -2,17 +2,32 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/models"
 )
 
-func (r *Repository) GetFilms(ctx context.Context) ([]models.Film, error) {
+func (r *Repository) GetFilms(ctx context.Context, limit uint64, offset uint64, desc bool) ([]models.Film, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	query, args, err := squirrel.Select("*").From("films").ToSql()
+	builder := squirrel.Select("*").From("films")
+	if limit > 0 {
+		builder = builder.Limit(limit)
+	}
+	if offset > 0 {
+		builder = builder.Offset(offset)
+	}
+	if desc {
+		builder = builder.OrderBy("name DESC")
+	} else {
+		builder = builder.OrderBy("name ASC")
+	}
+
+	query, args, err := builder.ToSql()
+	fmt.Println(query)
 	if err != nil {
 		return nil, errors.Wrap(err, "Repository.GetFilms.ToSql")
 	}

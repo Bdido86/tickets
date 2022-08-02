@@ -206,7 +206,24 @@ message UserAuthResponse {
 // Films endpoint messages
 // ---------------------------------------------------------------------------------------------------------------------
 
-message FilmsRequest {}
+message FilmsRequest {
+  uint64 limit = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    title: "Параметр сколько выбрать записей",
+    format: "integer"
+    example: "5"
+  }];
+  uint64 offset = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    title: "Параметр с какой записи выводить",
+    format: "integer"
+    example: "2"
+  }];
+  bool desc = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    title: "Тип сортировки по имени",
+    format: "boolean",
+    example: "false",
+    default: "false"
+  }];
+}
 message FilmsResponse {
   repeated Film films = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     title: "Список фильмов",

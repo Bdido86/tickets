@@ -6,7 +6,7 @@ import (
 )
 
 type Cinema interface {
-	GetFilms(ctx context.Context) ([]models.Film, error)
+	GetFilms(ctx context.Context, limit uint64, offset uint64, desc bool) ([]models.Film, error)
 	GetFilmRoom(ctx context.Context, filmId uint, currentUserId uint) (models.FilmRoom, error)
 
 	AuthUser(ctx context.Context, name string) (models.User, error)
