@@ -31,3 +31,11 @@ type RoomDb struct {
 	Id          uint64 `json:"id" db:"id"`
 	CountPlaces uint64 `json:"count_places" db:"count_places"`
 }
+
+type TicketDb struct {
+	Id     uint64 `json:"id" db:"id"`
+	UserId uint64 `json:"user_id" db:"user_id"`
+	FilmId uint64 `json:"film_id" db:"film_id"`
+	RoomId uint64 `json:"room_id" db:"room_id"`
+	Place  uint64 `json:"place" db:"place"`
+}

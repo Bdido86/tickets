@@ -67,35 +67,33 @@ func (s *server) FilmRoom(ctx context.Context, in *pb.FilmRoomRequest) (*pb.Film
 	filmId := uint(film64)
 	currentUserId := ctx.Value("userId").(uint)
 
-	_, err := s.CinemaRepository.GetFilmRoom(ctx, filmId, currentUserId)
-
+	filmRoom, err := s.CinemaRepository.GetFilmRoom(ctx, filmId, currentUserId)
 	if err != nil {
 		return &pb.FilmRoomResponse{}, errors.Wrap(err, "error FilmRoom")
 	}
-	//placesResponse := make([]*pb.FilmRoomResponse_Place, 0, len(room.GetPlaces()))
-	//for _, place := range room.GetPlaces() {
-	//	placesResponse = append(placesResponse, &pb.FilmRoomResponse_Place{
-	//		Id:     uint64(place.GetNumber()),
-	//		IsFree: place.GetUserId() > 0,
-	//		IsMy:   place.GetUserId() == getUserIdFromToken(ctx),
-	//	})
-	//}
 
-	//FilmResponse := &pb.Film{
-	//	Id:   film64,
-	//	Name: film,
-	//}
-	//
-	//RoomResponse := &pb.FilmRoomResponse_Room{
-	//	Id:     uint64(room.GetNumber()),
-	//	Places: placesResponse,
-	//}
+	placesResponse := make([]*pb.FilmRoomResponse_Place, 0, len(filmRoom.Room.Places))
+	for _, place := range filmRoom.Room.Places {
+		placesResponse = append(placesResponse, &pb.FilmRoomResponse_Place{
+			Id:     place.Id,
+			IsFree: place.IsFree,
+			IsMy:   place.IsMy,
+		})
+	}
 
-	//return &pb.FilmRoomResponse{
-	//	Film: FilmResponse,
-	//	Room: RoomResponse,
-	//}, nil
-	return nil, nil
+	FilmResponse := &pb.Film{
+		Id:   filmRoom.Film.Id,
+		Name: filmRoom.Film.Name,
+	}
+	RoomResponse := &pb.FilmRoomResponse_Room{
+		Id:     filmRoom.Room.Id,
+		Places: placesResponse,
+	}
+
+	return &pb.FilmRoomResponse{
+		Film: FilmResponse,
+		Room: RoomResponse,
+	}, nil
 }
 
 func (s *server) TicketCreate(ctx context.Context, in *pb.TicketCreateRequest) (*pb.TicketCreateResponse, error) {

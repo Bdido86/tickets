@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS public.tickets
     room_id integer NOT NULL,
     place    integer NOT NULL
 );
-CREATE UNIQUE INDEX tickets_user_film_room_seat ON public.tickets(user_id, film_id, room_id, seat);
+CREATE UNIQUE INDEX tickets_user_film_room_place ON public.tickets(user_id, film_id, room_id, place);
 CREATE INDEX tickets_user ON public.tickets(user_id);
 CREATE INDEX tickets_film_room ON public.tickets(film_id, room_id);
 -- +goose StatementEnd

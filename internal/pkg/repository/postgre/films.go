@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/pkg/errors"
@@ -66,6 +65,56 @@ func (r *Repository) GetFilmRoom(ctx context.Context, filmId uint, currentUserId
 		return filmRoom, errors.Wrap(err, "Repository.GetFilms.Get")
 	}
 
-	fmt.Printf("%+v\n", roomDb)
+	query, args, err = squirrel.Select("*").
+		From("tickets").
+		Where(
+			squirrel.Eq{"film_id": film.Id, "room_id": roomDb.Id},
+		).
+		PlaceholderFormat(squirrel.Dollar).ToSql()
+	if err != nil {
+		return filmRoom, errors.Wrap(err, "Repository.GetFilms.tickets")
+	}
+	var tickets []models.TicketDb
+	if err := pgxscan.Select(ctx, r.pool, &tickets, query, args...); err != nil {
+		return filmRoom, errors.Wrap(err, "Repository.GetFilms.tickets: error scan")
+	}
+
+	ticketsByPlaceId := make(map[uint64]models.TicketDb)
+	for _, ticket := range tickets {
+		ticketsByPlaceId[ticket.Place] = ticket
+	}
+
+	places := make([]models.Place, 0, roomDb.CountPlaces)
+	var i uint64
+	for i = 1; i <= roomDb.CountPlaces; i++ {
+		var IsMy, IsFree bool
+		findTicket, ok := ticketsByPlaceId[i]
+		if !ok {
+			IsMy = false
+			IsFree = true
+		} else {
+			IsFree = false
+			if findTicket.UserId == uint64(currentUserId) {
+				IsMy = true
+			}
+		}
+
+		place := models.Place{
+			Id:     i,
+			IsMy:   IsMy,
+			IsFree: IsFree,
+		}
+		places = append(places, place)
+	}
+
+	room := models.Room{
+		Id:     roomDb.Id,
+		Places: places,
+	}
+
+	filmRoom = models.FilmRoom{
+		Film: film,
+		Room: room,
+	}
 	return filmRoom, nil
 }
