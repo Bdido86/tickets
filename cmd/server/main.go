@@ -42,13 +42,6 @@ func main() {
 	}
 	defer pool.Close()
 
-	// настраиваем
-	//config := pool.Config()
-	//config.MaxConnIdleTime = MaxConnIdleTime
-	//config.MaxConnLifetime = MaxConnLifetime
-	//config.MinConns = MinConns
-	//config.MaxConns = MaxConns
-
 	if err := pool.Ping(ctx); err != nil {
 		log.Fatal("ping database error", err)
 	}
