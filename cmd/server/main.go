@@ -7,7 +7,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	apiPkg "gitlab.ozon.dev/Bdido86/movie-tickets/internal/api"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/config"
-	postgres "gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/repository/postgres"
+	postgre "gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/repository/postgre"
 	pb "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -27,6 +27,8 @@ const (
 
 	swaggerDir = "./third_party/swagger-ui"
 )
+
+var depsRepo apiPkg.Deps
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -65,13 +67,11 @@ func runGRPCServer(_ context.Context, pool *pgxpool.Pool, serverAddress string) 
 	}
 	defer listener.Close()
 
-	repo := postgres.NewRepository(pool)
+	depsRepo = apiPkg.Deps{CinemaRepository: postgre.NewRepository(pool)}
 
 	option := grpc.UnaryInterceptor(AuthInterceptor)
 	grpcServer := grpc.NewServer(option)
-	pb.RegisterCinemaServer(grpcServer, apiPkg.NewServer(apiPkg.Deps{
-		CinemaRepository: repo,
-	}))
+	pb.RegisterCinemaServer(grpcServer, apiPkg.NewServer(depsRepo))
 
 	if err = grpcServer.Serve(listener); err != nil {
 		panic(err)
@@ -119,18 +119,22 @@ func AuthInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServe
 
 	metaData, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return nil, status.Error(codes.PermissionDenied, "Header [token] is required1")
+		return nil, status.Error(codes.PermissionDenied, "Header [token] is required")
 	}
 
 	tokens := metaData.Get(tokenHeader)
 	if len(tokens) == 0 {
-		return nil, status.Error(codes.PermissionDenied, "Header [token] is required2")
+		return nil, status.Error(codes.PermissionDenied, "Header [token] is required")
 	}
 
 	for _, token := range tokens {
-		if apiPkg.IsValidToken(token) {
-			return handler(ctx, req)
+		userId, err := depsRepo.CinemaRepository.GetUserIdByToken(ctx, token)
+		if err != nil {
+			return nil, status.Error(codes.PermissionDenied, "Header [Token] is invalid. See 'auth' method")
 		}
+
+		ctx = context.WithValue(ctx, "userId", userId)
+		return handler(ctx, req)
 	}
 
 	return nil, status.Error(codes.PermissionDenied, "Header [Token] is invalid. See 'auth' method")

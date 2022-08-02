@@ -40,6 +40,34 @@ func (r *Repository) AuthUser(ctx context.Context, name string) (models.User, er
 	return user, nil
 }
 
+func (r *Repository) GetUserIdByToken(ctx context.Context, token string) (uint, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	var userId uint
+	query, args, err := squirrel.Select("id").
+		From("users").
+		Where(
+			squirrel.Eq{"token": token},
+		).PlaceholderFormat(squirrel.Dollar).ToSql()
+
+	if err != nil {
+		return userId, errors.Wrap(err, "Repository.GetUserIdByToken.Select")
+	}
+
+	if err := pgxscan.Get(ctx, r.pool, &userId, query, args...); err != nil {
+		if !pgxscan.NotFound(err) {
+			return userId, errors.Wrap(err, "Repository.GetUserIdByToken.Get")
+		}
+	}
+
+	if userId == 0 {
+		return userId, errors.Wrap(err, "Invalid Token. User not found")
+	}
+
+	return uint(userId), nil
+}
+
 func (r *Repository) createUser(ctx context.Context, name string) (models.User, error) {
 	var user models.User
 	token := generateToken(name)

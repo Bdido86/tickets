@@ -94,6 +94,11 @@
         },
         "tags": [
           "film"
+        ],
+        "security": [
+          {
+            "Bearer": []
+          }
         ]
       }
     },

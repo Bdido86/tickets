@@ -156,10 +156,6 @@ func (s *server) MyTickets(ctx context.Context, _ *pb.MyTicketsRequest) (*pb.MyT
 	}, nil
 }
 
-func IsValidToken(token string) bool {
-	return storage.IsValidToken(token)
-}
-
 func getUserIdFromToken(ctx context.Context) uint {
 	metaData, _ := metadata.FromIncomingContext(ctx)
 

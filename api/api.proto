@@ -67,6 +67,12 @@ service Cinema {
       summary: "Список фильмов для показа";
       operation_id: "getFilms";
       tags: "film";
+      security: {
+        security_requirement: {
+          key: "Bearer";
+          value: {}
+        }
+      }
     };
   };
 
