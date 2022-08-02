@@ -65,37 +65,37 @@ func (s *server) Films(ctx context.Context, _ *pb.FilmsRequest) (*pb.FilmsRespon
 func (s *server) FilmRoom(ctx context.Context, in *pb.FilmRoomRequest) (*pb.FilmRoomResponse, error) {
 	film64 := in.GetFilmId()
 	filmId := uint(film64)
-	films := storage.GetFilms()
-	film, ok := films[filmId]
-	if !ok {
-		return nil, status.Error(codes.InvalidArgument, "Field: [film_id] not found")
+	currentUserId := ctx.Value("userId").(uint)
+
+	_, err := s.CinemaRepository.GetFilmRoom(ctx, filmId, currentUserId)
+
+	if err != nil {
+		return &pb.FilmRoomResponse{}, errors.Wrap(err, "error FilmRoom")
 	}
+	//placesResponse := make([]*pb.FilmRoomResponse_Place, 0, len(room.GetPlaces()))
+	//for _, place := range room.GetPlaces() {
+	//	placesResponse = append(placesResponse, &pb.FilmRoomResponse_Place{
+	//		Id:     uint64(place.GetNumber()),
+	//		IsFree: place.GetUserId() > 0,
+	//		IsMy:   place.GetUserId() == getUserIdFromToken(ctx),
+	//	})
+	//}
 
-	room, _ := storage.GetRoom(filmId)
+	//FilmResponse := &pb.Film{
+	//	Id:   film64,
+	//	Name: film,
+	//}
+	//
+	//RoomResponse := &pb.FilmRoomResponse_Room{
+	//	Id:     uint64(room.GetNumber()),
+	//	Places: placesResponse,
+	//}
 
-	placesResponse := make([]*pb.FilmRoomResponse_Place, 0, len(room.GetPlaces()))
-	for _, place := range room.GetPlaces() {
-		placesResponse = append(placesResponse, &pb.FilmRoomResponse_Place{
-			Id:     uint64(place.GetNumber()),
-			IsFree: place.GetUserId() > 0,
-			IsMy:   place.GetUserId() == getUserIdFromToken(ctx),
-		})
-	}
-
-	FilmResponse := &pb.Film{
-		Id:   film64,
-		Name: film,
-	}
-
-	RoomResponse := &pb.FilmRoomResponse_Room{
-		Id:     uint64(room.GetNumber()),
-		Places: placesResponse,
-	}
-
-	return &pb.FilmRoomResponse{
-		Film: FilmResponse,
-		Room: RoomResponse,
-	}, nil
+	//return &pb.FilmRoomResponse{
+	//	Film: FilmResponse,
+	//	Room: RoomResponse,
+	//}, nil
+	return nil, nil
 }
 
 func (s *server) TicketCreate(ctx context.Context, in *pb.TicketCreateRequest) (*pb.TicketCreateResponse, error) {
