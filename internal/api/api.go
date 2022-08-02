@@ -2,53 +2,61 @@ package api
 
 import (
 	"context"
+	"github.com/pkg/errors"
+	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/repository"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/storage"
 	pb "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"sort"
 	"strconv"
 	"strings"
 )
 
 type server struct {
 	pb.UnimplementedCinemaServer
+	Deps
 }
 
-func NewServer() pb.CinemaServer {
-	return &server{}
+type Deps struct {
+	CinemaRepository repository.Cinema
 }
 
-func (s *server) UserAuth(_ context.Context, in *pb.UserAuthRequest) (*pb.UserAuthResponse, error) {
-	user := in.GetName()
-	if len(user) == 0 {
+func NewServer(d Deps) pb.CinemaServer {
+	return &server{
+		Deps: d,
+	}
+}
+
+func (s *server) UserAuth(ctx context.Context, in *pb.UserAuthRequest) (*pb.UserAuthResponse, error) {
+	userName := in.GetName()
+	if len(userName) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "Field: [name] is required")
 	}
 
-	token := storage.AuthUser(user)
+	user, err := s.CinemaRepository.AuthUser(ctx, userName)
+	if err != nil {
+		return &pb.UserAuthResponse{}, errors.Wrap(err, "error AuthUser")
+	}
+
 	return &pb.UserAuthResponse{
-		Token: token,
+		Token: user.Token,
 	}, nil
 }
 
-func (s *server) Films(_ context.Context, _ *pb.FilmsRequest) (*pb.FilmsResponse, error) {
-	films := storage.GetFilms()
-
-	keys := make([]int, 0, len(films))
-	for id, _ := range films {
-		keys = append(keys, int(id))
+func (s *server) Films(ctx context.Context, _ *pb.FilmsRequest) (*pb.FilmsResponse, error) {
+	films, err := s.CinemaRepository.GetFilms(ctx)
+	if err != nil {
+		return &pb.FilmsResponse{}, errors.Wrap(err, "error Films")
 	}
-	sort.Ints(keys)
 
 	result := make([]*pb.Film, 0, len(films))
-	for _, k := range keys {
+	for _, film := range films {
 		result = append(result, &pb.Film{
-			Id:   uint64(k),
-			Name: films[uint(k)],
+			Id:   uint64(film.Id),
+			Name: film.Name,
 		})
 	}
-
 	return &pb.FilmsResponse{
 		Films: result,
 	}, nil

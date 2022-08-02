@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"github.com/joho/godotenv"
+	"log"
 	"os"
 	"strconv"
 	"time"
@@ -14,6 +15,12 @@ const (
 	restPort                    = "REST_PORT"
 	debug                       = "DEBUG"
 	requestTimeOutInMilliSecond = "REQUEST_TIMEOUT_IN_MILLISECOND"
+
+	dbHost     = "DB_HOST"
+	dbPort     = "DB_PORT"
+	dbUser     = "DB_USER"
+	dbPassword = "DB_PASSWORD"
+	dbName     = "DB_NAME"
 )
 
 var singleInstance *Config
@@ -24,6 +31,12 @@ type Config struct {
 	restPort                    string
 	debug                       bool
 	requestTimeOutInMilliSecond time.Duration
+
+	dbHost     string
+	dbPort     string
+	dbUser     string
+	dbPassword string
+	dbName     string
 }
 
 func (c Config) Token() string {
@@ -46,6 +59,26 @@ func (c Config) RequestTimeOutInMilliSecond() time.Duration {
 	return c.requestTimeOutInMilliSecond
 }
 
+func (c Config) DbHost() string {
+	return c.dbHost
+}
+
+func (c Config) DbPort() string {
+	return c.dbPort
+}
+
+func (c Config) DbUser() string {
+	return c.dbUser
+}
+
+func (c Config) DbPassword() string {
+	return c.dbPassword
+}
+
+func (c Config) DbName() string {
+	return c.dbName
+}
+
 func init() {
 	if err := godotenv.Load(); err != nil {
 		fmt.Println("No .env file found.")
@@ -53,6 +86,8 @@ func init() {
 	}
 
 	singleInstance = new()
+
+	validateConfig()
 }
 
 func GetConfig() *Config {
@@ -62,9 +97,16 @@ func GetConfig() *Config {
 func new() *Config {
 	requestTimeOutInMilliSecond := getEnvAsInt64(requestTimeOutInMilliSecond, 500)
 	return &Config{
-		token:                       getEnv(tgToken, ""),
-		serverPort:                  getEnv(serverPort, ""),
-		restPort:                    getEnv(restPort, ""),
+		token:      getEnv(tgToken, ""),
+		serverPort: getEnv(serverPort, ""),
+		restPort:   getEnv(restPort, ""),
+
+		dbHost:     getEnv(dbHost, "localhost"),
+		dbPort:     getEnv(dbPort, "5432"),
+		dbUser:     getEnv(dbUser, ""),
+		dbPassword: getEnv(dbPassword, ""),
+		dbName:     getEnv(dbName, ""),
+
 		debug:                       getEnvAsBool(debug, false),
 		requestTimeOutInMilliSecond: time.Duration(requestTimeOutInMilliSecond) * time.Millisecond,
 	}
@@ -93,4 +135,29 @@ func getEnvAsInt64(name string, defaultValue int64) int64 {
 		return int64(valueInt)
 	}
 	return defaultValue
+}
+
+func validateConfig() {
+	c := GetConfig()
+	if len(c.ServerPort()) == 0 {
+		log.Fatal("Config error: server port is empty")
+	}
+	if len(c.RestPort()) == 0 {
+		log.Fatal("Config error: rest port is empty")
+	}
+	if len(c.DbHost()) == 0 {
+		log.Fatal("Config error: db host is empty")
+	}
+	if len(c.DbPort()) == 0 {
+		log.Fatal("Config error: db port is empty")
+	}
+	if len(c.DbUser()) == 0 {
+		log.Fatal("Config error: db user is empty")
+	}
+	if len(c.DbPassword()) == 0 {
+		log.Fatal("Config error: db password is empty")
+	}
+	if len(c.DbName()) == 0 {
+		log.Fatal("Config error: db name is empty")
+	}
 }

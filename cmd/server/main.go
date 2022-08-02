@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/jackc/pgx/v4/pgxpool"
 	apiPkg "gitlab.ozon.dev/Bdido86/movie-tickets/internal/api"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/config"
+	postgres "gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/repository/postgres"
 	pb "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -26,40 +29,56 @@ const (
 )
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	c := config.GetConfig()
-	if len(c.ServerPort()) == 0 {
-		log.Fatal("Config error: server port is empty")
+	psqlConn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", c.DbHost(), c.DbPort(), c.DbUser(), c.DbPassword(), c.DbName())
+	pool, err := pgxpool.Connect(ctx, psqlConn)
+	if err != nil {
+		log.Fatal("can't connect to database", err)
 	}
-	if len(c.RestPort()) == 0 {
-		log.Fatal("Config error: rest port is empty")
+	defer pool.Close()
+
+	// настраиваем
+	//config := pool.Config()
+	//config.MaxConnIdleTime = MaxConnIdleTime
+	//config.MaxConnLifetime = MaxConnLifetime
+	//config.MinConns = MinConns
+	//config.MaxConns = MaxConns
+
+	if err := pool.Ping(ctx); err != nil {
+		log.Fatal("ping database error", err)
 	}
 
 	serverAddress := ":" + c.ServerPort()
 	restAddress := ":" + c.RestPort()
 
-	go runREST(serverAddress, restAddress, c.RequestTimeOutInMilliSecond())
-	runGRPCServer(serverAddress)
+	go runREST(ctx, serverAddress, restAddress, c.RequestTimeOutInMilliSecond())
+	runGRPCServer(ctx, pool, serverAddress)
 }
 
-func runGRPCServer(serverAddress string) {
+func runGRPCServer(_ context.Context, pool *pgxpool.Pool, serverAddress string) {
 	listener, err := net.Listen("tcp", serverAddress)
 	if err != nil {
 		log.Fatalf("Error server connect tcp: %v", err)
 	}
 	defer listener.Close()
 
+	repo := postgres.NewRepository(pool)
+
 	option := grpc.UnaryInterceptor(AuthInterceptor)
 	grpcServer := grpc.NewServer(option)
-	pb.RegisterCinemaServer(grpcServer, apiPkg.NewServer())
+	pb.RegisterCinemaServer(grpcServer, apiPkg.NewServer(apiPkg.Deps{
+		CinemaRepository: repo,
+	}))
 
 	if err = grpcServer.Serve(listener); err != nil {
 		panic(err)
 	}
 }
 
-func runREST(serverAddress, restAddress string, requestTimeoutInMilliSecond time.Duration) {
-	ctx := context.Background()
-
+func runREST(ctx context.Context, serverAddress, restAddress string, requestTimeoutInMilliSecond time.Duration) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
