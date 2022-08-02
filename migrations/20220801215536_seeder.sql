@@ -19,7 +19,7 @@ values ('Один дома1'),
        ('Пианист');
 
 
-INSERT INTO public.rooms (count_seats)
+INSERT INTO public.rooms (count_places)
 values (50),
        (40),
        (40),

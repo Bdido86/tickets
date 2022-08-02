@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_DB}
+      POSTGRES_DB: ${DB_NAME}
     container_name: 'postgresql-movie-tickets'
     volumes:
       - ./postgres/data:/var/lib/postgresql/data # том для того, чтобы при перезапуске контейнера все данные сохранялись

@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/pkg/errors"
@@ -27,7 +26,6 @@ func (r *Repository) GetFilms(ctx context.Context, limit uint64, offset uint64, 
 	}
 
 	query, args, err := builder.ToSql()
-	fmt.Println(query)
 	if err != nil {
 		return nil, errors.Wrap(err, "Repository.GetFilms.ToSql")
 	}
