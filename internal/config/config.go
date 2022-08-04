@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"github.com/joho/godotenv"
 	"log"
 	"os"
@@ -81,8 +80,7 @@ func (c Config) DbName() string {
 
 func init() {
 	if err := godotenv.Load(); err != nil {
-		fmt.Println("No .env file found.")
-		panic("No .env file")
+		log.Fatal("No .env file found")
 	}
 
 	singleInstance = new()

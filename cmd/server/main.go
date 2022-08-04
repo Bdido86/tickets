@@ -38,12 +38,12 @@ func main() {
 	psqlConn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", c.DbHost(), c.DbPort(), c.DbUser(), c.DbPassword(), c.DbName())
 	pool, err := pgxpool.Connect(ctx, psqlConn)
 	if err != nil {
-		log.Fatal("can't connect to database", err)
+		log.Fatalf("Can't connect to database: %v", err)
 	}
 	defer pool.Close()
 
 	if err := pool.Ping(ctx); err != nil {
-		log.Fatal("ping database error", err)
+		log.Fatalf("Ping database error: %v", err)
 	}
 
 	serverAddress := ":" + c.ServerPort()
@@ -56,7 +56,7 @@ func main() {
 func runGRPCServer(_ context.Context, pool *pgxpool.Pool, serverAddress string) {
 	listener, err := net.Listen("tcp", serverAddress)
 	if err != nil {
-		log.Fatalf("Error server connect tcp: %v", err)
+		log.Fatalf("Error GRPCServer connect tcp: %v", err)
 	}
 	defer listener.Close()
 
@@ -67,7 +67,7 @@ func runGRPCServer(_ context.Context, pool *pgxpool.Pool, serverAddress string) 
 	pb.RegisterCinemaServer(grpcServer, apiPkg.NewServer(depsRepo))
 
 	if err = grpcServer.Serve(listener); err != nil {
-		panic(err)
+		log.Fatalf("Error GRPCServer listen: %v", err)
 	}
 }
 
@@ -89,7 +89,7 @@ func runREST(ctx context.Context, serverAddress, restAddress string, requestTime
 
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	if err := pb.RegisterCinemaHandlerFromEndpoint(ctx, rmux, serverAddress, opts); err != nil {
-		panic(err)
+		log.Fatalf("Error RESTServer listen: %v", err)
 	}
 
 	log.Println("Serving gRPC-Gateway on " + restAddress)
