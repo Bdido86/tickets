@@ -32,6 +32,9 @@ func (r *Repository) GetFilms(ctx context.Context, limit uint64, offset uint64, 
 
 	var films []models.Film
 	if err := pgxscan.Select(ctx, r.pool, &films, query, args...); err != nil {
+		if pgxscan.NotFound(err) {
+			return films, nil
+		}
 		return nil, errors.Wrap(err, "Repository.GetFilms.Select")
 	}
 
