@@ -1,17 +1,37 @@
 version: '3.9'
 
+networks:
+  somenet:
+    driver: bridge
+
 services:
   postgres:
     image: postgres:14.4
+    container_name: 'postgresql-movie-tickets'
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
-    container_name: 'postgresql-movie-tickets'
     volumes:
       - ./postgres/data:/var/lib/postgresql/data # том для того, чтобы при перезапуске контейнера все данные сохранялись
       - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf # конфиг БД
     command: postgres -c config_file=/etc/postgresql/postgresql.conf
     ports:
-      - "${DB_PORT}:5432"
+      - "5432:5432"
     restart: always
+    networks:
+      - somenet
+
+  pgbouncer:
+    image: edoburu/pgbouncer
+    container_name: 'pgbouncer-postgresql-movie-tickets'
+    volumes:
+      - ./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+      - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
+    ports:
+      - "6432:6432"
+    depends_on:
+      - postgres
+    restart: always
+    networks:
+      - somenet

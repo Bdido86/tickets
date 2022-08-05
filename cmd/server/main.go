@@ -35,7 +35,12 @@ func main() {
 	defer cancel()
 
 	c := config.GetConfig()
-	psqlConn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", c.DbHost(), c.DbPort(), c.DbUser(), c.DbPassword(), c.DbName())
+
+	// postgres connection
+	//psqlConn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", c.DbHost(), c.DbPort(), c.DbUser(), c.DbPassword(), c.DbName())
+
+	// pgBouncer connection
+	psqlConn := fmt.Sprintf("host=%s port=6432 user=%s password=%s dbname=%s sslmode=disable", c.DbHost(), c.DbUser(), c.DbPassword(), c.DbName())
 	pool, err := pgxpool.Connect(ctx, psqlConn)
 	if err != nil {
 		log.Fatalf("Can't connect to database: %v", err)
@@ -52,6 +57,8 @@ func main() {
 	go runREST(ctx, serverAddress, restAddress, c.RequestTimeOutInMilliSecond())
 	runGRPCServer(ctx, pool, serverAddress)
 }
+
+//psql -U user postgres://127.0.0.1/pgbouncer
 
 func runGRPCServer(_ context.Context, pool *pgxpool.Pool, serverAddress string) {
 	listener, err := net.Listen("tcp", serverAddress)
