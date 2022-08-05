@@ -19,7 +19,7 @@ func (r *Repository) AuthUser(ctx context.Context, name string) (models.User, er
 	query, args, err := squirrel.Select("*").
 		From("users").
 		Where(
-			squirrel.Eq{"name": name},
+			squirrel.Eq{"name": strings.ToLower(name)},
 		).PlaceholderFormat(squirrel.Dollar).ToSql()
 
 	if err != nil {
