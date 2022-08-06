@@ -2,53 +2,61 @@ package api
 
 import (
 	"context"
-	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/storage"
+	"github.com/pkg/errors"
+	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/repository"
 	pb "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"sort"
-	"strconv"
-	"strings"
 )
 
 type server struct {
 	pb.UnimplementedCinemaServer
+	Deps
 }
 
-func NewServer() pb.CinemaServer {
-	return &server{}
+type Deps struct {
+	CinemaRepository repository.Cinema
 }
 
-func (s *server) UserAuth(_ context.Context, in *pb.UserAuthRequest) (*pb.UserAuthResponse, error) {
-	user := in.GetName()
-	if len(user) == 0 {
+func NewServer(d Deps) pb.CinemaServer {
+	return &server{
+		Deps: d,
+	}
+}
+
+func (s *server) UserAuth(ctx context.Context, in *pb.UserAuthRequest) (*pb.UserAuthResponse, error) {
+	userName := in.GetName()
+	if len(userName) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "Field: [name] is required")
 	}
 
-	token := storage.AuthUser(user)
+	user, err := s.CinemaRepository.AuthUser(ctx, userName)
+	if err != nil {
+		return &pb.UserAuthResponse{}, errors.Wrap(err, "error AuthUser")
+	}
+
 	return &pb.UserAuthResponse{
-		Token: token,
+		Token: user.Token,
 	}, nil
 }
 
-func (s *server) Films(_ context.Context, _ *pb.FilmsRequest) (*pb.FilmsResponse, error) {
-	films := storage.GetFilms()
+func (s *server) Films(ctx context.Context, in *pb.FilmsRequest) (*pb.FilmsResponse, error) {
+	limit64 := in.GetLimit()
+	offset64 := in.GetOffset()
+	desc := in.GetDesc()
 
-	keys := make([]int, 0, len(films))
-	for id, _ := range films {
-		keys = append(keys, int(id))
+	films, err := s.CinemaRepository.GetFilms(ctx, limit64, offset64, desc)
+	if err != nil {
+		return &pb.FilmsResponse{}, errors.Wrap(err, "error Films")
 	}
-	sort.Ints(keys)
 
 	result := make([]*pb.Film, 0, len(films))
-	for _, k := range keys {
+	for _, film := range films {
 		result = append(result, &pb.Film{
-			Id:   uint64(k),
-			Name: films[uint(k)],
+			Id:   film.Id,
+			Name: film.Name,
 		})
 	}
-
 	return &pb.FilmsResponse{
 		Films: result,
 	}, nil
@@ -57,30 +65,27 @@ func (s *server) Films(_ context.Context, _ *pb.FilmsRequest) (*pb.FilmsResponse
 func (s *server) FilmRoom(ctx context.Context, in *pb.FilmRoomRequest) (*pb.FilmRoomResponse, error) {
 	film64 := in.GetFilmId()
 	filmId := uint(film64)
-	films := storage.GetFilms()
-	film, ok := films[filmId]
-	if !ok {
-		return nil, status.Error(codes.InvalidArgument, "Field: [film_id] not found")
+
+	filmRoom, err := s.CinemaRepository.GetFilmRoom(ctx, filmId, getCurrentUserId(ctx))
+	if err != nil {
+		return &pb.FilmRoomResponse{}, errors.Wrap(err, "error FilmRoom")
 	}
 
-	room, _ := storage.GetRoom(filmId)
-
-	placesResponse := make([]*pb.FilmRoomResponse_Place, 0, len(room.GetPlaces()))
-	for _, place := range room.GetPlaces() {
+	placesResponse := make([]*pb.FilmRoomResponse_Place, 0, len(filmRoom.Room.Places))
+	for _, place := range filmRoom.Room.Places {
 		placesResponse = append(placesResponse, &pb.FilmRoomResponse_Place{
-			Id:     uint64(place.GetNumber()),
-			IsFree: place.GetUserId() > 0,
-			IsMy:   place.GetUserId() == getUserIdFromToken(ctx),
+			Id:     place.Id,
+			IsFree: place.IsFree,
+			IsMy:   place.IsMy,
 		})
 	}
 
 	FilmResponse := &pb.Film{
-		Id:   film64,
-		Name: film,
+		Id:   filmRoom.Film.Id,
+		Name: filmRoom.Film.Name,
 	}
-
 	RoomResponse := &pb.FilmRoomResponse_Room{
-		Id:     uint64(room.GetNumber()),
+		Id:     filmRoom.Room.Id,
 		Places: placesResponse,
 	}
 
@@ -97,23 +102,17 @@ func (s *server) TicketCreate(ctx context.Context, in *pb.TicketCreateRequest) (
 	filmId := uint(film64)
 	placeId := uint(place64)
 
-	films := storage.GetFilms()
-	_, ok := films[filmId]
-	if !ok {
-		return nil, status.Error(codes.InvalidArgument, "Field: [film_id] not found")
-	}
-
-	ticket, err := storage.BuyTicket(filmId, placeId, getUserIdFromToken(ctx))
+	ticket, err := s.CinemaRepository.CreateTicket(ctx, filmId, placeId, getCurrentUserId(ctx))
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &pb.TicketCreateResponse{
 		Ticket: &pb.Ticket{
-			Id:      uint64(ticket.GetId()),
-			FilmId:  uint64(ticket.GetFilmId()),
-			RoomId:  uint64(ticket.GetRoomId()),
-			PlaceId: uint64(ticket.GetPlaceId()),
+			Id:      ticket.Id,
+			FilmId:  ticket.FilmId,
+			RoomId:  ticket.RoomId,
+			PlaceId: ticket.Place,
 		},
 	}, nil
 }
@@ -122,24 +121,27 @@ func (s *server) TicketDelete(ctx context.Context, in *pb.TicketDeleteRequest) (
 	ticket64 := in.GetTicketId()
 	ticketId := uint(ticket64)
 
-	err := storage.DeleteTicket(getUserIdFromToken(ctx), ticketId)
+	err := s.CinemaRepository.DeleteTicket(ctx, ticketId, getCurrentUserId(ctx))
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "Field: [ticket_id] not found")
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &pb.TicketDeleteResponse{}, nil
 }
 
 func (s *server) MyTickets(ctx context.Context, _ *pb.MyTicketsRequest) (*pb.MyTicketsResponse, error) {
-	tickets, _ := storage.GetTickets(getUserIdFromToken(ctx))
+	tickets, err := s.CinemaRepository.GetMyTickets(ctx, getCurrentUserId(ctx))
+	if err != nil {
+		return &pb.MyTicketsResponse{}, errors.Wrap(err, "Error MyTickets")
+	}
 
 	ticketsResponse := make([]*pb.Ticket, 0, len(tickets))
 	for _, ticket := range tickets {
 		ticketsResponse = append(ticketsResponse, &pb.Ticket{
-			Id:      uint64(ticket.GetId()),
-			FilmId:  uint64(ticket.GetFilmId()),
-			RoomId:  uint64(ticket.GetRoomId()),
-			PlaceId: uint64(ticket.GetPlaceId()),
+			Id:      ticket.Id,
+			FilmId:  ticket.FilmId,
+			RoomId:  ticket.RoomId,
+			PlaceId: ticket.Place,
 		})
 	}
 
@@ -148,16 +150,6 @@ func (s *server) MyTickets(ctx context.Context, _ *pb.MyTicketsRequest) (*pb.MyT
 	}, nil
 }
 
-func IsValidToken(token string) bool {
-	return storage.IsValidToken(token)
-}
-
-func getUserIdFromToken(ctx context.Context) uint {
-	metaData, _ := metadata.FromIncomingContext(ctx)
-
-	tokens := metaData.Get("Token")
-	words := strings.Split(tokens[0], "-")
-	id, _ := strconv.Atoi(words[1])
-
-	return uint(id)
+func getCurrentUserId(ctx context.Context) uint {
+	return ctx.Value("userId").(uint)
 }
