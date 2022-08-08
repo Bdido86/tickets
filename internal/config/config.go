@@ -12,6 +12,7 @@ const (
 	tgToken                     = "TELEGRAM_BOT_API_TOKEN"
 	serverPort                  = "SERVER_PORT"
 	restPort                    = "REST_PORT"
+	restGrpcPort                = "REST_GRPC_PORT"
 	debug                       = "DEBUG"
 	requestTimeOutInMilliSecond = "REQUEST_TIMEOUT_IN_MILLISECOND"
 
@@ -28,6 +29,7 @@ type Config struct {
 	token                       string
 	serverPort                  string
 	restPort                    string
+	restGrpcPort                string
 	debug                       bool
 	requestTimeOutInMilliSecond time.Duration
 
@@ -48,6 +50,10 @@ func (c Config) ServerPort() string {
 
 func (c Config) RestPort() string {
 	return c.restPort
+}
+
+func (c Config) RestGrpcPort() string {
+	return c.restGrpcPort
 }
 
 func (c Config) Debug() bool {
@@ -95,9 +101,10 @@ func GetConfig() *Config {
 func new() *Config {
 	requestTimeOutInMilliSecond := getEnvAsInt64(requestTimeOutInMilliSecond, 500)
 	return &Config{
-		token:      getEnv(tgToken, ""),
-		serverPort: getEnv(serverPort, ""),
-		restPort:   getEnv(restPort, ""),
+		token:        getEnv(tgToken, ""),
+		serverPort:   getEnv(serverPort, ""),
+		restPort:     getEnv(restPort, ""),
+		restGrpcPort: getEnv(restGrpcPort, ""),
 
 		dbHost:     getEnv(dbHost, "localhost"),
 		dbPort:     getEnv(dbPort, "5432"),
@@ -142,6 +149,9 @@ func validateConfig() {
 	}
 	if len(c.RestPort()) == 0 {
 		log.Fatal("Config error: rest port is empty")
+	}
+	if len(c.RestGrpcPort()) == 0 {
+		log.Fatal("Config error: rest grpc port is empty")
 	}
 	if len(c.DbHost()) == 0 {
 		log.Fatal("Config error: db host is empty")

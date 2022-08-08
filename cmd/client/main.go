@@ -30,15 +30,15 @@ func main() {
 
 	c := config.GetConfig()
 	restAddress := ":" + c.RestPort()
-	restAddressGrpc := ":8091"
+	restGRPCAddress := ":" + c.RestGrpcPort()
 	serverAddress := ":" + c.ServerPort()
 
-	go runGRPCServer(ctx, restAddressGrpc, serverAddress)
-	runREST(ctx, restAddress, restAddressGrpc, c.RequestTimeOutInMilliSecond())
+	go runGRPCServer(ctx, restGRPCAddress, serverAddress)
+	runREST(ctx, restAddress, restGRPCAddress, c.RequestTimeOutInMilliSecond())
 }
 
-func runGRPCServer(_ context.Context, restAddressGrpc string, serverAddress string) {
-	listener, err := net.Listen("tcp", restAddressGrpc)
+func runGRPCServer(_ context.Context, restGRPCAddress string, serverAddress string) {
+	listener, err := net.Listen("tcp", restGRPCAddress)
 	if err != nil {
 		log.Fatalf("Error GRPCServer connect tcp: %v", err)
 	}
@@ -58,13 +58,13 @@ func runGRPCServer(_ context.Context, restAddressGrpc string, serverAddress stri
 	grpcServer := grpc.NewServer(option)
 	pb.RegisterCinemaServer(grpcServer, grpcClient.NewServer(clientServer))
 
-	log.Println("Serving REST API GRPC on " + restAddressGrpc)
+	log.Println("Serving REST API GRPC on " + restGRPCAddress)
 	if err = grpcServer.Serve(listener); err != nil {
 		log.Fatalf("Error ClientServer listen: %v", err)
 	}
 }
 
-func runREST(ctx context.Context, restAddress string, restAddressGrpc string, requestTimeoutInMilliSecond time.Duration) {
+func runREST(ctx context.Context, restAddress string, restGRPCAddress string, requestTimeoutInMilliSecond time.Duration) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -81,7 +81,7 @@ func runREST(ctx context.Context, restAddress string, restAddressGrpc string, re
 	mux.Handle("/swagger/", http.StripPrefix("/swagger/", fs))
 
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	if err := pb.RegisterCinemaHandlerFromEndpoint(ctx, rmux, restAddressGrpc, opts); err != nil {
+	if err := pb.RegisterCinemaHandlerFromEndpoint(ctx, rmux, restGRPCAddress, opts); err != nil {
 		log.Fatalf("Error RESTServer listen: %v", err)
 	}
 
@@ -103,7 +103,6 @@ func AuthInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServe
 	if len(tokens) == 0 {
 		return nil, status.Error(codes.PermissionDenied, "Header [token] is required")
 	}
-
 	if len(tokens[0]) < 30 {
 		return nil, status.Error(codes.PermissionDenied, "Header [token] is invalid")
 	}
