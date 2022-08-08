@@ -1,4 +1,4 @@
-package api
+package grpc
 
 import (
 	"context"
@@ -32,7 +32,7 @@ func (s *server) UserAuth(ctx context.Context, in *pb.UserAuthRequest) (*pb.User
 
 	user, err := s.CinemaRepository.AuthUser(ctx, userName)
 	if err != nil {
-		return &pb.UserAuthResponse{}, errors.Wrap(err, "error AuthUser")
+		return &pb.UserAuthResponse{}, errors.Wrap(err, "Error AuthUser")
 	}
 
 	return &pb.UserAuthResponse{
@@ -47,7 +47,7 @@ func (s *server) Films(ctx context.Context, in *pb.FilmsRequest) (*pb.FilmsRespo
 
 	films, err := s.CinemaRepository.GetFilms(ctx, limit64, offset64, desc)
 	if err != nil {
-		return &pb.FilmsResponse{}, errors.Wrap(err, "error Films")
+		return &pb.FilmsResponse{}, errors.Wrap(err, "Error Films")
 	}
 
 	result := make([]*pb.Film, 0, len(films))
@@ -68,7 +68,7 @@ func (s *server) FilmRoom(ctx context.Context, in *pb.FilmRoomRequest) (*pb.Film
 
 	filmRoom, err := s.CinemaRepository.GetFilmRoom(ctx, filmId, getCurrentUserId(ctx))
 	if err != nil {
-		return &pb.FilmRoomResponse{}, errors.Wrap(err, "error FilmRoom")
+		return &pb.FilmRoomResponse{}, errors.Wrap(err, "Error FilmRoom")
 	}
 
 	placesResponse := make([]*pb.FilmRoomResponse_Place, 0, len(filmRoom.Room.Places))

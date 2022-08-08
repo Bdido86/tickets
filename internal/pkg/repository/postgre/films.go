@@ -76,7 +76,7 @@ func (r *Repository) GetFilmRoom(ctx context.Context, filmId uint, currentUserId
 	var roomDb models.RoomDb
 	if err := pgxscan.Get(ctx, r.pool, &roomDb, query, args...); err != nil {
 		if pgxscan.NotFound(err) {
-			return filmRoom, errors.Wrap(err, "Repository.GetFilmRoom.Get: film_room not found")
+			return filmRoom, errors.Wrap(err, "No screenings per film. Row film_room not found")
 		}
 		return filmRoom, errors.Wrap(err, "Repository.GetFilms.Get")
 	}
@@ -127,7 +127,6 @@ func (r *Repository) GetFilmRoom(ctx context.Context, filmId uint, currentUserId
 		Id:     roomDb.Id,
 		Places: places,
 	}
-
 	filmRoom = models.FilmRoom{
 		Film: film,
 		Room: room,

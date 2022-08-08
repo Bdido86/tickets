@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/pkg/errors"
@@ -121,7 +120,6 @@ func (r *Repository) CreateTicket(ctx context.Context, filmId uint, placeId uint
 		if !pgxscan.NotFound(err) {
 			return ticket, errors.Wrap(err, "Repository.CreateTicket.SelectTickets")
 		}
-		fmt.Printf("%+v\n", ticket)
 		query, args, err = squirrel.Insert("tickets").
 			Columns("user_id, film_id, room_id, place").
 			Values(currentUserId, filmId, roomDb.Id, placeId).

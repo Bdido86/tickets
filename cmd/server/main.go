@@ -3,32 +3,26 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/jackc/pgx/v4/pgxpool"
-	apiPkg "gitlab.ozon.dev/Bdido86/movie-tickets/internal/api"
+	grpcBackend "gitlab.ozon.dev/Bdido86/movie-tickets/internal/api/grpc/server"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/config"
 	postgre "gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/repository/postgre"
 	pb "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"log"
 	"net"
-	"net/http"
 	"strings"
-	"time"
 )
 
 const (
 	tokenHeader = "Token"
 	authPathRPC = "UserAuth"
-
-	swaggerDir = "./third_party/swagger-ui"
 )
 
-var depsRepo apiPkg.Deps
+var depsRepo grpcBackend.Deps
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -36,11 +30,13 @@ func main() {
 
 	c := config.GetConfig()
 
-	// postgres connection
-	//psqlConn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", c.DbHost(), c.DbPort(), c.DbUser(), c.DbPassword(), c.DbName())
+	serverAddress := ":" + c.ServerPort()
 
+	// postgres connection
+	psqlConn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", c.DbHost(), c.DbPort(), c.DbUser(), c.DbPassword(), c.DbName())
 	// pgBouncer connection
-	psqlConn := fmt.Sprintf("host=%s port=6432 user=%s password=%s dbname=%s sslmode=disable", c.DbHost(), c.DbUser(), c.DbPassword(), c.DbName())
+	//psqlConn := fmt.Sprintf("host=%s port=6432 user=%s password=%s dbname=%s sslmode=disable", c.DbHost(), c.DbUser(), c.DbPassword(), c.DbName())
+
 	pool, err := pgxpool.Connect(ctx, psqlConn)
 	if err != nil {
 		log.Fatalf("Can't connect to database: %v", err)
@@ -51,64 +47,21 @@ func main() {
 		log.Fatalf("Ping database error: %v", err)
 	}
 
-	serverAddress := ":" + c.ServerPort()
-	restAddress := ":" + c.RestPort()
-
-	go runREST(ctx, serverAddress, restAddress, c.RequestTimeOutInMilliSecond())
-	runGRPCServer(ctx, pool, serverAddress)
-}
-
-//psql -U user postgres://127.0.0.1/pgbouncer
-
-func runGRPCServer(_ context.Context, pool *pgxpool.Pool, serverAddress string) {
 	listener, err := net.Listen("tcp", serverAddress)
 	if err != nil {
 		log.Fatalf("Error GRPCServer connect tcp: %v", err)
 	}
 	defer listener.Close()
 
-	depsRepo = apiPkg.Deps{CinemaRepository: postgre.NewRepository(pool)}
+	depsRepo = grpcBackend.Deps{CinemaRepository: postgre.NewRepository(pool)}
 
 	option := grpc.UnaryInterceptor(AuthInterceptor)
 	grpcServer := grpc.NewServer(option)
-	pb.RegisterCinemaServer(grpcServer, apiPkg.NewServer(depsRepo))
+	pb.RegisterCinemaServer(grpcServer, grpcBackend.NewServer(depsRepo))
 
+	log.Println("Serving gRPC-backend on " + serverAddress)
 	if err = grpcServer.Serve(listener); err != nil {
 		log.Fatalf("Error GRPCServer listen: %v", err)
-	}
-}
-
-func runREST(ctx context.Context, serverAddress, restAddress string, requestTimeoutInMilliSecond time.Duration) {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	runtime.DefaultContextTimeout = requestTimeoutInMilliSecond
-	rmux := runtime.NewServeMux(
-		runtime.WithIncomingHeaderMatcher(headerMatcherREST),
-	)
-
-	// Swagger server
-	mux := http.NewServeMux()
-	mux.Handle("/", rmux)
-
-	fs := http.FileServer(http.Dir(swaggerDir))
-	mux.Handle("/swagger/", http.StripPrefix("/swagger/", fs))
-
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	if err := pb.RegisterCinemaHandlerFromEndpoint(ctx, rmux, serverAddress, opts); err != nil {
-		log.Fatalf("Error RESTServer listen: %v", err)
-	}
-
-	log.Println("Serving gRPC-Gateway on " + restAddress)
-	log.Fatalln(http.ListenAndServe(restAddress, mux))
-}
-
-func headerMatcherREST(key string) (string, bool) {
-	switch key {
-	case tokenHeader:
-		return key, true
-	default:
-		return key, false
 	}
 }
 
@@ -130,7 +83,7 @@ func AuthInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServe
 	for _, token := range tokens {
 		userId, err := depsRepo.CinemaRepository.GetUserIdByToken(ctx, token)
 		if err != nil {
-			return nil, status.Error(codes.PermissionDenied, "Header [Token] is invalid. See 'auth' method")
+			return nil, status.Error(codes.PermissionDenied, "Header [Token] is invalid. See 'auth' method. "+err.Error())
 		}
 
 		ctx = context.WithValue(ctx, "userId", userId)
