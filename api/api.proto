@@ -59,7 +59,7 @@ service Cinema {
     };
   };
 
-  rpc Films (FilmsRequest) returns (FilmsResponse) {
+  rpc Films (FilmsRequest) returns (stream FilmsResponse) {
     option (google.api.http) = {
       get: "/v1/films"
     };

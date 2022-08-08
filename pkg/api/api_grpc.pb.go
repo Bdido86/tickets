@@ -23,7 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CinemaClient interface {
 	UserAuth(ctx context.Context, in *UserAuthRequest, opts ...grpc.CallOption) (*UserAuthResponse, error)
-	Films(ctx context.Context, in *FilmsRequest, opts ...grpc.CallOption) (*FilmsResponse, error)
+	Films(ctx context.Context, in *FilmsRequest, opts ...grpc.CallOption) (Cinema_FilmsClient, error)
 	FilmRoom(ctx context.Context, in *FilmRoomRequest, opts ...grpc.CallOption) (*FilmRoomResponse, error)
 	TicketCreate(ctx context.Context, in *TicketCreateRequest, opts ...grpc.CallOption) (*TicketCreateResponse, error)
 	TicketDelete(ctx context.Context, in *TicketDeleteRequest, opts ...grpc.CallOption) (*TicketDeleteResponse, error)
@@ -47,13 +47,36 @@ func (c *cinemaClient) UserAuth(ctx context.Context, in *UserAuthRequest, opts .
 	return out, nil
 }
 
-func (c *cinemaClient) Films(ctx context.Context, in *FilmsRequest, opts ...grpc.CallOption) (*FilmsResponse, error) {
-	out := new(FilmsResponse)
-	err := c.cc.Invoke(ctx, "/api.Cinema/Films", in, out, opts...)
+func (c *cinemaClient) Films(ctx context.Context, in *FilmsRequest, opts ...grpc.CallOption) (Cinema_FilmsClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Cinema_ServiceDesc.Streams[0], "/api.Cinema/Films", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &cinemaFilmsClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Cinema_FilmsClient interface {
+	Recv() (*FilmsResponse, error)
+	grpc.ClientStream
+}
+
+type cinemaFilmsClient struct {
+	grpc.ClientStream
+}
+
+func (x *cinemaFilmsClient) Recv() (*FilmsResponse, error) {
+	m := new(FilmsResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *cinemaClient) FilmRoom(ctx context.Context, in *FilmRoomRequest, opts ...grpc.CallOption) (*FilmRoomResponse, error) {
@@ -97,7 +120,7 @@ func (c *cinemaClient) MyTickets(ctx context.Context, in *MyTicketsRequest, opts
 // for forward compatibility
 type CinemaServer interface {
 	UserAuth(context.Context, *UserAuthRequest) (*UserAuthResponse, error)
-	Films(context.Context, *FilmsRequest) (*FilmsResponse, error)
+	Films(*FilmsRequest, Cinema_FilmsServer) error
 	FilmRoom(context.Context, *FilmRoomRequest) (*FilmRoomResponse, error)
 	TicketCreate(context.Context, *TicketCreateRequest) (*TicketCreateResponse, error)
 	TicketDelete(context.Context, *TicketDeleteRequest) (*TicketDeleteResponse, error)
@@ -112,8 +135,8 @@ type UnimplementedCinemaServer struct {
 func (UnimplementedCinemaServer) UserAuth(context.Context, *UserAuthRequest) (*UserAuthResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UserAuth not implemented")
 }
-func (UnimplementedCinemaServer) Films(context.Context, *FilmsRequest) (*FilmsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Films not implemented")
+func (UnimplementedCinemaServer) Films(*FilmsRequest, Cinema_FilmsServer) error {
+	return status.Errorf(codes.Unimplemented, "method Films not implemented")
 }
 func (UnimplementedCinemaServer) FilmRoom(context.Context, *FilmRoomRequest) (*FilmRoomResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FilmRoom not implemented")
@@ -158,22 +181,25 @@ func _Cinema_UserAuth_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Cinema_Films_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FilmsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
+func _Cinema_Films_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(FilmsRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
 	}
-	if interceptor == nil {
-		return srv.(CinemaServer).Films(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/api.Cinema/Films",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CinemaServer).Films(ctx, req.(*FilmsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+	return srv.(CinemaServer).Films(m, &cinemaFilmsServer{stream})
+}
+
+type Cinema_FilmsServer interface {
+	Send(*FilmsResponse) error
+	grpc.ServerStream
+}
+
+type cinemaFilmsServer struct {
+	grpc.ServerStream
+}
+
+func (x *cinemaFilmsServer) Send(m *FilmsResponse) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 func _Cinema_FilmRoom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -260,10 +286,6 @@ var Cinema_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Cinema_UserAuth_Handler,
 		},
 		{
-			MethodName: "Films",
-			Handler:    _Cinema_Films_Handler,
-		},
-		{
 			MethodName: "FilmRoom",
 			Handler:    _Cinema_FilmRoom_Handler,
 		},
@@ -280,6 +302,12 @@ var Cinema_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Cinema_MyTickets_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Films",
+			Handler:       _Cinema_Films_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "api.proto",
 }
