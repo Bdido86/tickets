@@ -3,10 +3,11 @@ package repository
 import (
 	"context"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/models"
+	pb "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api"
 )
 
 type Cinema interface {
-	GetFilms(ctx context.Context, limit uint64, offset uint64, desc bool) ([]models.Film, error)
+	GetFilms(ctx context.Context, limit uint64, offset uint64, desc bool, found func(film *pb.Film) error) error
 	GetFilmRoom(ctx context.Context, filmId uint, currentUserId uint) (models.FilmRoom, error)
 
 	AuthUser(ctx context.Context, name string) (models.User, error)

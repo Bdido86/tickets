@@ -72,9 +72,18 @@
         "operationId": "getFilms",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/apiFilmsResponse"
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/apiFilmsResponse"
+                },
+                "error": {
+                  "$ref": "#/definitions/rpcStatus"
+                }
+              },
+              "title": "Stream result of apiFilmsResponse"
             }
           },
           "400": {
@@ -388,11 +397,8 @@
     "apiFilmsResponse": {
       "type": "object",
       "properties": {
-        "films": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/apiFilm"
-          },
+        "film": {
+          "$ref": "#/definitions/apiFilm",
           "description": "Получение списков фильмов",
           "title": "Список фильмов"
         }

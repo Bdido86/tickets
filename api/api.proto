@@ -225,7 +225,7 @@ message FilmsRequest {
   }];
 }
 message FilmsResponse {
-  repeated Film films = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+  Film film = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     title: "Список фильмов",
     description: "Получение списков фильмов",
   }];

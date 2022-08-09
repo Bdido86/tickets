@@ -6,9 +6,10 @@ import (
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/models"
+	pb "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api"
 )
 
-func (r *Repository) GetFilms(ctx context.Context, limit uint64, offset uint64, desc bool) ([]models.Film, error) {
+func (r *Repository) GetFilms(ctx context.Context, limit uint64, offset uint64, desc bool, streamFunc func(film *pb.Film) error) error {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -27,18 +28,32 @@ func (r *Repository) GetFilms(ctx context.Context, limit uint64, offset uint64, 
 
 	query, args, err := builder.ToSql()
 	if err != nil {
-		return nil, errors.Wrap(err, "Repository.GetFilms.ToSql")
+		return errors.Wrap(err, "Repository.GetFilms.ToSql")
 	}
 
-	var films []models.Film
-	if err := pgxscan.Select(ctx, r.pool, &films, query, args...); err != nil {
-		if pgxscan.NotFound(err) {
-			return films, nil
+	rows, _ := r.pool.Query(ctx, query, args...)
+	defer rows.Close()
+
+	for rows.Next() {
+		if ctx.Err() != nil {
+			return ctx.Err()
 		}
-		return nil, errors.Wrap(err, "Repository.GetFilms.Select")
+
+		var filmModel models.Film
+		if err := pgxscan.ScanRow(&filmModel, rows); err != nil {
+			return errors.Wrap(err, "Repository.GetFilms.ToSql")
+		}
+
+		err = streamFunc(&pb.Film{
+			Id:   filmModel.Id,
+			Name: filmModel.Name,
+		})
+		if err != nil {
+			return errors.Wrap(err, "Repository.GetFilms.StreamFunc")
+		}
 	}
 
-	return films, nil
+	return nil
 }
 
 func (r *Repository) GetFilmRoom(ctx context.Context, filmId uint, currentUserId uint) (models.FilmRoom, error) {

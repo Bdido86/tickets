@@ -6,6 +6,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"io"
 	"strings"
 )
 
@@ -36,18 +37,40 @@ func (s *server) UserAuth(ctx context.Context, in *pb.UserAuthRequest) (*pb.User
 	return s.Client.UserAuth(ctx, in)
 }
 
-func (s *server) Films(ctx context.Context, in *pb.FilmsRequest) (*pb.FilmsResponse, error) {
+func (s *server) Films(in *pb.FilmsRequest, stream pb.Cinema_FilmsServer) error {
 	limit64 := in.GetLimit()
 	offset64 := in.GetOffset()
 	if limit64 > 100 {
-		return nil, status.Error(codes.InvalidArgument, "Field: [limit] is too big. Maximum 100")
+		return status.Error(codes.InvalidArgument, "Field: [limit] is too big. Maximum 100")
 	}
 	if offset64 > 100 {
-		return nil, status.Error(codes.InvalidArgument, "Field: [offset] is too big. Maximum 100")
+		return status.Error(codes.InvalidArgument, "Field: [offset] is too big. Maximum 100")
 	}
 
+	ctx := stream.Context()
 	ctx = prepareContext(ctx)
-	return s.Client.Films(ctx, in)
+	streamFilm, err := s.Client.Films(ctx, in)
+	if err != nil {
+		return status.Error(codes.Unavailable, "Cannot get films stream")
+	}
+	for {
+		res, err := streamFilm.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return status.Error(codes.Unavailable, "Cannot receive response stream")
+		}
+
+		film := res.GetFilm()
+		resFilm := &pb.FilmsResponse{Film: film}
+		err = stream.Send(resFilm)
+		if err != nil {
+			return status.Error(codes.Unavailable, "Cannot receive response stream film")
+		}
+	}
+
+	return err
 }
 
 func (s *server) FilmRoom(ctx context.Context, in *pb.FilmRoomRequest) (*pb.FilmRoomResponse, error) {
