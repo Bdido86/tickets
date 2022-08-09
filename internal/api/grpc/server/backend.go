@@ -66,28 +66,6 @@ func (s *server) Films(in *pb.FilmsRequest, stream pb.Cinema_FilmsServer) error 
 	return nil
 }
 
-//func (s *server) Films(in *pb.FilmsRequest, out pb.Cinema_FilmsServer) error {
-//	limit64 := in.GetLimit()
-//	offset64 := in.GetOffset()
-//	desc := in.GetDesc()
-//
-//	films, err := s.CinemaRepository.GetFilms(ctx, limit64, offset64, desc)
-//	if err != nil {
-//		return &pb.FilmsResponse{}, errors.Wrap(err, "Error Films")
-//	}
-//
-//	result := make([]*pb.Film, 0, len(films))
-//	for _, film := range films {
-//		result = append(result, &pb.Film{
-//			Id:   film.Id,
-//			Name: film.Name,
-//		})
-//	}
-//	return &pb.FilmsResponse{
-//		Films: result,
-//	}, nil
-//}
-
 func (s *server) FilmRoom(ctx context.Context, in *pb.FilmRoomRequest) (*pb.FilmRoomResponse, error) {
 	film64 := in.GetFilmId()
 	filmId := uint(film64)
