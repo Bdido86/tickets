@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.21.3
-// source: api.proto
+// source: client.proto
 
-package api
+package client
 
 import (
 	context "context"
@@ -309,5 +309,5 @@ var Cinema_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "api.proto",
+	Metadata: "client.proto",
 }
