@@ -9,6 +9,11 @@ import (
 	pb "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api"
 )
 
+type Film interface {
+	GetFilms(ctx context.Context, limit uint64, offset uint64, desc bool, found func(film *pb.Film) error) error
+	GetFilmRoom(ctx context.Context, filmId uint, currentUserId uint) (models.FilmRoom, error)
+}
+
 func (r *Repository) GetFilms(ctx context.Context, limit uint64, offset uint64, desc bool, streamFunc func(film *pb.Film) error) error {
 	r.mu.RLock()
 	defer r.mu.RUnlock()

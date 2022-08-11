@@ -29,24 +29,24 @@ func main() {
 	defer cancel()
 
 	c := config.GetConfig()
-	restAddress := ":" + c.RestPort()
-	restGRPCAddress := ":" + c.RestGrpcPort()
-	serverAddress := ":" + c.ServerPort()
+	clientPort := ":" + c.ClientPort()
+	clientGRPCPort := ":" + c.ClientGrpcPort()
+	serverPort := ":" + c.ServerPort()
 
-	go runGRPCServer(ctx, restGRPCAddress, serverAddress)
-	runREST(ctx, restAddress, restGRPCAddress, c.RequestTimeOutInMilliSecond())
+	go runGRPCServer(ctx, clientGRPCPort, serverPort)
+	runREST(ctx, clientPort, clientGRPCPort, c.RequestTimeOutInMilliSecond())
 }
 
-func runGRPCServer(_ context.Context, restGRPCAddress string, serverAddress string) {
-	listener, err := net.Listen("tcp", restGRPCAddress)
+func runGRPCServer(_ context.Context, clientGRPCPort string, serverPort string) {
+	listener, err := net.Listen("tcp", clientGRPCPort)
 	if err != nil {
-		log.Fatalf("Error GRPCServer connect tcp: %v", err)
+		log.Fatalf("Error clientGRPCPort connect tcp: %v", err)
 	}
 	defer listener.Close()
 
-	clientConn, err := grpc.Dial(serverAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	clientConn, err := grpc.Dial(serverPort, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("Error client connect tcp: %v", err)
+		log.Fatalf("Error serverPort connect tcp: %v", err)
 	}
 	defer clientConn.Close()
 
@@ -58,13 +58,13 @@ func runGRPCServer(_ context.Context, restGRPCAddress string, serverAddress stri
 	grpcServer := grpc.NewServer(option)
 	pb.RegisterCinemaServer(grpcServer, grpcClient.NewServer(clientServer))
 
-	log.Println("Serving REST API GRPC on " + restGRPCAddress)
+	log.Println("Serving CLIENT API GRPC on " + clientGRPCPort)
 	if err = grpcServer.Serve(listener); err != nil {
-		log.Fatalf("Error ClientServer listen: %v", err)
+		log.Fatalf("Error CLIENT API GRPC listen: %v", err)
 	}
 }
 
-func runREST(ctx context.Context, restAddress string, restGRPCAddress string, requestTimeoutInMilliSecond time.Duration) {
+func runREST(ctx context.Context, clientPort string, clientGRPCPort string, requestTimeoutInMilliSecond time.Duration) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -81,12 +81,12 @@ func runREST(ctx context.Context, restAddress string, restGRPCAddress string, re
 	mux.Handle("/swagger/", http.StripPrefix("/swagger/", fs))
 
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	if err := pb.RegisterCinemaHandlerFromEndpoint(ctx, rmux, restGRPCAddress, opts); err != nil {
-		log.Fatalf("Error RESTServer listen: %v", err)
+	if err := pb.RegisterCinemaHandlerFromEndpoint(ctx, rmux, clientGRPCPort, opts); err != nil {
+		log.Fatalf("Error clientGRPC listen: %v", err)
 	}
 
-	log.Println("Serving REST API on " + restAddress)
-	log.Fatalln(http.ListenAndServe(restAddress, mux))
+	log.Println("Serving CLIENT API on " + clientPort)
+	log.Fatalln(http.ListenAndServe(clientPort, mux))
 }
 
 func AuthInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {

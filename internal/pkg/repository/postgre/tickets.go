@@ -8,6 +8,12 @@ import (
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/models"
 )
 
+type Ticket interface {
+	GetMyTickets(ctx context.Context, currentUserId uint) ([]models.Ticket, error)
+	CreateTicket(ctx context.Context, filmId uint, placeId uint, currentUserId uint) (models.Ticket, error)
+	DeleteTicket(ctx context.Context, ticketId uint, currentUserId uint) error
+}
+
 func (r *Repository) GetMyTickets(ctx context.Context, currentUserId uint) ([]models.Ticket, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()

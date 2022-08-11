@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v4/pgxpool"
-	grpcBackend "gitlab.ozon.dev/Bdido86/movie-tickets/internal/api/grpc/server"
+	grpcServer "gitlab.ozon.dev/Bdido86/movie-tickets/internal/api/grpc/server"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/config"
 	postgre "gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/repository/postgre"
 	pb "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api"
@@ -22,7 +22,7 @@ const (
 	authPathRPC = "UserAuth"
 )
 
-var depsRepo grpcBackend.Deps
+var depsRepo grpcServer.Deps
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -53,14 +53,14 @@ func main() {
 	}
 	defer listener.Close()
 
-	depsRepo = grpcBackend.Deps{CinemaRepository: postgre.NewRepository(pool)}
+	depsRepo = grpcServer.Deps{CinemaRepository: postgre.NewRepository(pool)}
 
 	option := grpc.UnaryInterceptor(AuthInterceptor)
-	grpcServer := grpc.NewServer(option)
-	pb.RegisterCinemaServer(grpcServer, grpcBackend.NewServer(depsRepo))
+	grpc := grpc.NewServer(option)
+	pb.RegisterCinemaServer(grpc, grpcServer.NewServer(depsRepo))
 
 	log.Println("Serving gRPC-backend on " + serverAddress)
-	if err = grpcServer.Serve(listener); err != nil {
+	if err = grpc.Serve(listener); err != nil {
 		log.Fatalf("Error GRPCServer listen: %v", err)
 	}
 }
