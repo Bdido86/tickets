@@ -6,15 +6,15 @@ import (
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/models"
-	pb "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api"
+	pbApiServer "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/server"
 )
 
 type Film interface {
-	GetFilms(ctx context.Context, limit uint64, offset uint64, desc bool, found func(film *pb.Film) error) error
+	GetFilms(ctx context.Context, limit uint64, offset uint64, desc bool, found func(film *pbApiServer.Film) error) error
 	GetFilmRoom(ctx context.Context, filmId uint, currentUserId uint) (models.FilmRoom, error)
 }
 
-func (r *Repository) GetFilms(ctx context.Context, limit uint64, offset uint64, desc bool, streamFunc func(film *pb.Film) error) error {
+func (r *Repository) GetFilms(ctx context.Context, limit uint64, offset uint64, desc bool, streamFunc func(film *pbApiServer.Film) error) error {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -49,7 +49,7 @@ func (r *Repository) GetFilms(ctx context.Context, limit uint64, offset uint64, 
 			return errors.Wrap(err, "Repository.GetFilms.ToSql")
 		}
 
-		err = streamFunc(&pb.Film{
+		err = streamFunc(&pbApiServer.Film{
 			Id:   filmModel.Id,
 			Name: filmModel.Name,
 		})

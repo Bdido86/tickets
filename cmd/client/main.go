@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	grpcClient "gitlab.ozon.dev/Bdido86/movie-tickets/internal/api/grpc/client"
+	grpcApiClient "gitlab.ozon.dev/Bdido86/movie-tickets/internal/api/grpc/client"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/config"
-	pb "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api"
+	pbApiClient "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/client"
+	pbApiServer "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/server"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -33,30 +34,29 @@ func main() {
 	clientGRPCPort := ":" + c.ClientGrpcPort()
 	serverPort := ":" + c.ServerPort()
 
-	go runGRPCServer(ctx, clientGRPCPort, serverPort)
-	runREST(ctx, clientPort, clientGRPCPort, c.RequestTimeOutInMilliSecond())
+	go runRestGrpc(ctx, clientGRPCPort, serverPort)
+	runRest(ctx, clientPort, clientGRPCPort, c.RequestTimeOutInMilliSecond())
 }
 
-func runGRPCServer(_ context.Context, clientGRPCPort string, serverPort string) {
+func runRestGrpc(_ context.Context, clientGRPCPort string, serverPort string) {
 	listener, err := net.Listen("tcp", clientGRPCPort)
 	if err != nil {
 		log.Fatalf("Error clientGRPCPort connect tcp: %v", err)
 	}
 	defer listener.Close()
 
-	clientConn, err := grpc.Dial(serverPort, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	serverConn, err := grpc.Dial(serverPort, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Error serverPort connect tcp: %v", err)
 	}
-	defer clientConn.Close()
+	defer serverConn.Close()
 
-	client := pb.NewCinemaClient(clientConn)
-
-	clientServer := grpcClient.Deps{Client: client}
+	server := pbApiServer.NewCinemaBackendClient(serverConn)
+	clientServer := grpcApiClient.Deps{Server: server}
 
 	option := grpc.UnaryInterceptor(AuthInterceptor)
 	grpcServer := grpc.NewServer(option)
-	pb.RegisterCinemaServer(grpcServer, grpcClient.NewServer(clientServer))
+	pbApiClient.RegisterCinemaFrontendServer(grpcServer, grpcApiClient.NewServer(clientServer))
 
 	log.Println("Serving CLIENT API GRPC on " + clientGRPCPort)
 	if err = grpcServer.Serve(listener); err != nil {
@@ -64,7 +64,7 @@ func runGRPCServer(_ context.Context, clientGRPCPort string, serverPort string) 
 	}
 }
 
-func runREST(ctx context.Context, clientPort string, clientGRPCPort string, requestTimeoutInMilliSecond time.Duration) {
+func runRest(ctx context.Context, clientPort string, clientGRPCPort string, requestTimeoutInMilliSecond time.Duration) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -81,7 +81,7 @@ func runREST(ctx context.Context, clientPort string, clientGRPCPort string, requ
 	mux.Handle("/swagger/", http.StripPrefix("/swagger/", fs))
 
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	if err := pb.RegisterCinemaHandlerFromEndpoint(ctx, rmux, clientGRPCPort, opts); err != nil {
+	if err := pbApiClient.RegisterCinemaFrontendHandlerFromEndpoint(ctx, rmux, clientGRPCPort, opts); err != nil {
 		log.Fatalf("Error clientGRPC listen: %v", err)
 	}
 

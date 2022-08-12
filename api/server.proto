@@ -1,9 +1,9 @@
 syntax = "proto3";
 
-package api;
-option go_package = "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api;server";
+package api_server;
+option go_package = "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/server;server";
 
-service Cinema {
+service CinemaBackend {
   rpc UserAuth (UserAuthRequest) returns (UserAuthResponse) {};
   rpc Films (FilmsRequest) returns (stream FilmsResponse) {};
   rpc FilmRoom (FilmRoomRequest) returns (FilmRoomResponse) {};

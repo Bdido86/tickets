@@ -34,8 +34,8 @@ migrate-status:
     google.golang.org/protobuf/cmd/protoc-gen-go \
     google.golang.org/grpc/cmd/protoc-gen-go-grpc
 .protoc:
-	protoc -I ./api --go_out ./pkg/api --go_opt paths=source_relative --go-grpc_out ./pkg/api --go-grpc_opt paths=source_relative --grpc-gateway_out ./pkg/api --grpc-gateway_opt paths=source_relative ./api/client.proto && \
-    protoc -I ./api --go_out ./pkg/api --go_opt paths=source_relative --go-grpc_out ./pkg/api --go-grpc_opt paths=source_relative --grpc-gateway_out ./pkg/api --grpc-gateway_opt paths=source_relative ./api/server.proto
+	protoc -I ./api --go_out ./pkg/api/client --go_opt paths=source_relative --go-grpc_out ./pkg/api/client --go-grpc_opt paths=source_relative --grpc-gateway_out ./pkg/api/client --grpc-gateway_opt paths=source_relative ./api/client.proto && \
+    protoc -I ./api --go_out ./pkg/api/server --go_opt paths=source_relative --go-grpc_out ./pkg/api/server --go-grpc_opt paths=source_relative --grpc-gateway_out ./pkg/api/server --grpc-gateway_opt paths=source_relative ./api/server.proto
 
 
 .PHONY: .swagger .buf-generate

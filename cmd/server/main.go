@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v4/pgxpool"
-	grpcServer "gitlab.ozon.dev/Bdido86/movie-tickets/internal/api/grpc/server"
+	apiGrpcServer "gitlab.ozon.dev/Bdido86/movie-tickets/internal/api/grpc/server"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/config"
-	postgre "gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/repository/postgre"
-	pb "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api"
+	postgres "gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/repository/postgres"
+	pbApiServer "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/server"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -22,7 +22,7 @@ const (
 	authPathRPC = "UserAuth"
 )
 
-var depsRepo grpcServer.Deps
+var depsRepo apiGrpcServer.Deps
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -53,14 +53,14 @@ func main() {
 	}
 	defer listener.Close()
 
-	depsRepo = grpcServer.Deps{CinemaRepository: postgre.NewRepository(pool)}
+	depsRepo = apiGrpcServer.Deps{CinemaRepository: postgres.NewRepository(pool)}
 
 	option := grpc.UnaryInterceptor(AuthInterceptor)
-	grpc := grpc.NewServer(option)
-	pb.RegisterCinemaServer(grpc, grpcServer.NewServer(depsRepo))
+	grpcServer := grpc.NewServer(option)
+	pbApiServer.RegisterCinemaBackendServer(grpcServer, apiGrpcServer.NewServer(depsRepo))
 
-	log.Println("Serving gRPC-backend on " + serverAddress)
-	if err = grpc.Serve(listener); err != nil {
+	log.Println("Serving SERVER GRPC on " + serverAddress)
+	if err = grpcServer.Serve(listener); err != nil {
 		log.Fatalf("Error GRPCServer listen: %v", err)
 	}
 }

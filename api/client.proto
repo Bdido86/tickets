@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-package api;
-option go_package = "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api;client";
+package api_client;
+option go_package = "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/client;client";
 
 import "google/api/annotations.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
@@ -46,7 +46,7 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
   }
 };
 
-service Cinema {
+service CinemaFrontend {
   rpc UserAuth (UserAuthRequest) returns (UserAuthResponse) {
     option (google.api.http) = {
       post: "/v1/auth"

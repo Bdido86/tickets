@@ -2,7 +2,8 @@ package grpc
 
 import (
 	"context"
-	pb "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api"
+	pbClient "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/client"
+	pbServer "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/server"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -11,21 +12,21 @@ import (
 )
 
 type server struct {
-	pb.UnimplementedCinemaServer
+	pbClient.UnimplementedCinemaFrontendServer
 	Deps
 }
 
 type Deps struct {
-	Client pb.CinemaClient
+	Server pbServer.CinemaBackendClient
 }
 
-func NewServer(d Deps) pb.CinemaServer {
+func NewServer(d Deps) pbClient.CinemaFrontendServer {
 	return &server{
 		Deps: d,
 	}
 }
 
-func (s *server) UserAuth(ctx context.Context, in *pb.UserAuthRequest) (*pb.UserAuthResponse, error) {
+func (s *server) UserAuth(ctx context.Context, in *pbClient.UserAuthRequest) (*pbClient.UserAuthResponse, error) {
 	userName := strings.Trim(in.GetName(), " ")
 	if len(userName) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "Field: [name] is required")
@@ -34,10 +35,20 @@ func (s *server) UserAuth(ctx context.Context, in *pb.UserAuthRequest) (*pb.User
 		return nil, status.Error(codes.InvalidArgument, "Field: [name] must be between 2-40 chars!")
 	}
 
-	return s.Client.UserAuth(ctx, in)
+	inServer := &pbServer.UserAuthRequest{
+		Name: userName,
+	}
+	serverUserAuthResponse, err := s.Server.UserAuth(ctx, inServer)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbClient.UserAuthResponse{
+		Token: serverUserAuthResponse.Token,
+	}, nil
 }
 
-func (s *server) Films(in *pb.FilmsRequest, stream pb.Cinema_FilmsServer) error {
+func (s *server) Films(in *pbClient.FilmsRequest, stream pbClient.CinemaFrontend_FilmsServer) error {
 	limit64 := in.GetLimit()
 	offset64 := in.GetOffset()
 	if limit64 > 100 {
@@ -47,14 +58,20 @@ func (s *server) Films(in *pb.FilmsRequest, stream pb.Cinema_FilmsServer) error 
 		return status.Error(codes.InvalidArgument, "Field: [offset] is too big. Maximum 100")
 	}
 
+	inServer := &pbServer.FilmsRequest{
+		Limit:  in.Limit,
+		Offset: in.Offset,
+		Desc:   in.Desc,
+	}
 	ctx := stream.Context()
 	ctx = prepareContext(ctx)
-	streamFilm, err := s.Client.Films(ctx, in)
+	serverStreamFilm, err := s.Server.Films(ctx, inServer)
 	if err != nil {
 		return status.Error(codes.Unavailable, "Cannot get films stream")
 	}
+
 	for {
-		res, err := streamFilm.Recv()
+		res, err := serverStreamFilm.Recv()
 		if err == io.EOF {
 			return nil
 		}
@@ -62,18 +79,25 @@ func (s *server) Films(in *pb.FilmsRequest, stream pb.Cinema_FilmsServer) error 
 			return status.Error(codes.Unavailable, "Cannot receive response stream")
 		}
 
-		film := res.GetFilm()
-		resFilm := &pb.FilmsResponse{Film: film}
+		serverFilm := res.GetFilm()
+		film := &pbClient.Film{
+			Id:   serverFilm.Id,
+			Name: serverFilm.Name,
+		}
+
+		resFilm := &pbClient.FilmsResponse{
+			Film: film,
+		}
 		err = stream.Send(resFilm)
 		if err != nil {
 			return status.Error(codes.Unavailable, "Cannot receive response stream film")
 		}
 	}
 
-	return err
+	return nil
 }
 
-func (s *server) FilmRoom(ctx context.Context, in *pb.FilmRoomRequest) (*pb.FilmRoomResponse, error) {
+func (s *server) FilmRoom(ctx context.Context, in *pbClient.FilmRoomRequest) (*pbClient.FilmRoomResponse, error) {
 	film64 := in.GetFilmId()
 	if film64 == 0 {
 		return nil, status.Error(codes.InvalidArgument, "Field: [filmId] is required and > 0")
@@ -82,11 +106,39 @@ func (s *server) FilmRoom(ctx context.Context, in *pb.FilmRoomRequest) (*pb.Film
 		return nil, status.Error(codes.InvalidArgument, "Field: [filmId] is too big. Maximum 20")
 	}
 
+	inServer := &pbServer.FilmRoomRequest{
+		FilmId: in.FilmId,
+	}
 	ctx = prepareContext(ctx)
-	return s.Client.FilmRoom(ctx, in)
+	serverFilmRoomResponse, err := s.Server.FilmRoom(ctx, inServer)
+	if err != nil {
+		return nil, err
+	}
+
+	film := &pbClient.Film{
+		Id:   serverFilmRoomResponse.Film.Id,
+		Name: serverFilmRoomResponse.Film.Name,
+	}
+
+	places := make([]*pbClient.FilmRoomResponse_Place, 0, len(serverFilmRoomResponse.Room.Places))
+	for _, serverPlace := range serverFilmRoomResponse.Room.Places {
+		places = append(places, &pbClient.FilmRoomResponse_Place{
+			Id:     serverPlace.Id,
+			IsMy:   serverPlace.IsMy,
+			IsFree: serverPlace.IsFree,
+		})
+	}
+
+	return &pbClient.FilmRoomResponse{
+		Film: film,
+		Room: &pbClient.FilmRoomResponse_Room{
+			Id:     serverFilmRoomResponse.Room.Id,
+			Places: places,
+		},
+	}, nil
 }
 
-func (s *server) TicketCreate(ctx context.Context, in *pb.TicketCreateRequest) (*pb.TicketCreateResponse, error) {
+func (s *server) TicketCreate(ctx context.Context, in *pbClient.TicketCreateRequest) (*pbClient.TicketCreateResponse, error) {
 	film64 := in.GetFilmId()
 	place64 := in.GetPlaceId()
 	if film64 == 0 {
@@ -102,11 +154,27 @@ func (s *server) TicketCreate(ctx context.Context, in *pb.TicketCreateRequest) (
 		return nil, status.Error(codes.InvalidArgument, "Field: [placeId] is too big. Maximum 50")
 	}
 
+	inServer := &pbServer.TicketCreateRequest{
+		FilmId:  in.FilmId,
+		PlaceId: in.PlaceId,
+	}
 	ctx = prepareContext(ctx)
-	return s.Client.TicketCreate(ctx, in)
+	serverTicketCreateResponse, err := s.Server.TicketCreate(ctx, inServer)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbClient.TicketCreateResponse{
+		Ticket: &pbClient.Ticket{
+			Id:      serverTicketCreateResponse.Ticket.Id,
+			FilmId:  serverTicketCreateResponse.Ticket.FilmId,
+			RoomId:  serverTicketCreateResponse.Ticket.RoomId,
+			PlaceId: serverTicketCreateResponse.Ticket.PlaceId,
+		},
+	}, nil
 }
 
-func (s *server) TicketDelete(ctx context.Context, in *pb.TicketDeleteRequest) (*pb.TicketDeleteResponse, error) {
+func (s *server) TicketDelete(ctx context.Context, in *pbClient.TicketDeleteRequest) (*pbClient.TicketDeleteResponse, error) {
 	ticket64 := in.GetTicketId()
 	if ticket64 == 0 {
 		return nil, status.Error(codes.InvalidArgument, "Field: [ticketId] is required and > 0")
@@ -115,13 +183,38 @@ func (s *server) TicketDelete(ctx context.Context, in *pb.TicketDeleteRequest) (
 		return nil, status.Error(codes.InvalidArgument, "Field: [placeId] is too big. Maximum 500")
 	}
 
+	inServer := &pbServer.TicketDeleteRequest{
+		TicketId: in.TicketId,
+	}
 	ctx = prepareContext(ctx)
-	return s.Client.TicketDelete(ctx, in)
+	_, err := s.Server.TicketDelete(ctx, inServer)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbClient.TicketDeleteResponse{}, nil
 }
 
-func (s *server) MyTickets(ctx context.Context, in *pb.MyTicketsRequest) (*pb.MyTicketsResponse, error) {
+func (s *server) MyTickets(ctx context.Context, _ *pbClient.MyTicketsRequest) (*pbClient.MyTicketsResponse, error) {
+	inServer := &pbServer.MyTicketsRequest{}
 	ctx = prepareContext(ctx)
-	return s.Client.MyTickets(ctx, in)
+	serverMyTicketsResponse, err := s.Server.MyTickets(ctx, inServer)
+	if err != nil {
+		return nil, err
+	}
+
+	tickets := make([]*pbClient.Ticket, 0, len(serverMyTicketsResponse.Tickets))
+	for _, serverTicket := range serverMyTicketsResponse.Tickets {
+		tickets = append(tickets, &pbClient.Ticket{
+			Id:      serverTicket.Id,
+			FilmId:  serverTicket.FilmId,
+			RoomId:  serverTicket.RoomId,
+			PlaceId: serverTicket.PlaceId,
+		})
+	}
+	return &pbClient.MyTicketsResponse{
+		Tickets: tickets,
+	}, nil
 }
 
 func prepareContext(ctx context.Context) context.Context {
