@@ -61,13 +61,10 @@ func (r *Repository) GetUserIdByToken(ctx context.Context, token string) (uint, 
 	}
 
 	if err := pgxscan.Get(ctx, r.pool, &userId, query, args...); err != nil {
-		if !pgxscan.NotFound(err) {
-			return userId, errors.Wrap(err, "Repository.GetUserIdByToken.Get")
+		if pgxscan.NotFound(err) {
+			return userId, errors.New("Invalid Token. User not found by token")
 		}
-	}
-
-	if userId == 0 {
-		return userId, errors.Wrap(err, "Invalid Token. User not found")
+		return userId, errors.Wrap(err, "Repository.GetUserIdByToken.Get")
 	}
 
 	return userId, nil

@@ -5,3 +5,4 @@
 /api/protoc-gen-openapiv2
 
 /.docker/postgres/data
+/.docker/postgres/data-qa

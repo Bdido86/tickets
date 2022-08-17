@@ -25,6 +25,9 @@ migrate:
 migrate-status:
 	goose -dir=${GOOSE_MIGRATION_DIR} ${GOOSE_DRIVER} ${GOOSE_DBSTRING} status
 
+.PHONY: .migrate-test
+.migrate-qa:
+	goose -dir=${QA_GOOSE_MIGRATION_DIR} ${QA_GOOSE_DRIVER} ${QA_GOOSE_DBSTRING} up
 
 .PHONY: .dev-toolscd .protoc
 .dev-tools:
