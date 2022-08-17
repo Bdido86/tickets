@@ -17,7 +17,7 @@ services:
       - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf # конфиг БД
     command: postgres -c config_file=/etc/postgresql/postgresql.conf
     ports:
-      - ${DB_PORT}:5432
+      - "5432:5432"
     restart: always
     networks:
       - somenet
