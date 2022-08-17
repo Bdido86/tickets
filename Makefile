@@ -48,7 +48,11 @@ migrate-status:
 	buf mod update
 	buf generate
 
-.PHONY: .test
+.PHONY: .test .test-integration
 .test:
 	$(info Running tests...)
 	go test ./...
+
+.test-integration:
+	$(info Running tests integration ...)
+	go test -tags=integration ./tests -v
