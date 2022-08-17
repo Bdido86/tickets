@@ -10,7 +10,7 @@
   },
   "tags": [
     {
-      "name": "Cinema"
+      "name": "CinemaFrontend"
     }
   ],
   "host": "localhost:8090",
@@ -33,7 +33,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/apiUserAuthResponse"
+              "$ref": "#/definitions/api_clientUserAuthResponse"
             }
           },
           "400": {
@@ -57,7 +57,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/apiUserAuthRequest"
+              "$ref": "#/definitions/api_clientUserAuthRequest"
             }
           }
         ],
@@ -72,9 +72,18 @@
         "operationId": "getFilms",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/apiFilmsResponse"
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/api_clientFilmsResponse"
+                },
+                "error": {
+                  "$ref": "#/definitions/rpcStatus"
+                }
+              },
+              "title": "Stream result of api_clientFilmsResponse"
             }
           },
           "400": {
@@ -137,7 +146,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/apiFilmRoomResponse"
+              "$ref": "#/definitions/api_clientFilmRoomResponse"
             }
           },
           "400": {
@@ -182,7 +191,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/apiTicketCreateResponse"
+              "$ref": "#/definitions/api_clientTicketCreateResponse"
             }
           },
           "400": {
@@ -236,7 +245,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/apiMyTicketsResponse"
+              "$ref": "#/definitions/api_clientMyTicketsResponse"
             }
           },
           "400": {
@@ -272,7 +281,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/apiTicketDeleteResponse"
+              "$ref": "#/definitions/api_clientTicketDeleteResponse"
             }
           },
           "400": {
@@ -357,7 +366,7 @@
         }
       }
     },
-    "apiFilm": {
+    "api_clientFilm": {
       "type": "object",
       "properties": {
         "id": {
@@ -374,44 +383,41 @@
         }
       }
     },
-    "apiFilmRoomResponse": {
+    "api_clientFilmRoomResponse": {
       "type": "object",
       "properties": {
         "film": {
-          "$ref": "#/definitions/apiFilm"
+          "$ref": "#/definitions/api_clientFilm"
         },
         "room": {
           "$ref": "#/definitions/FilmRoomResponseRoom"
         }
       }
     },
-    "apiFilmsResponse": {
+    "api_clientFilmsResponse": {
       "type": "object",
       "properties": {
-        "films": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/apiFilm"
-          },
+        "film": {
+          "$ref": "#/definitions/api_clientFilm",
           "description": "Получение списков фильмов",
           "title": "Список фильмов"
         }
       }
     },
-    "apiMyTicketsResponse": {
+    "api_clientMyTicketsResponse": {
       "type": "object",
       "properties": {
         "tickets": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/apiTicket"
+            "$ref": "#/definitions/api_clientTicket"
           },
           "description": "Список моих билетов",
           "title": "Список моих билетов"
         }
       }
     },
-    "apiTicket": {
+    "api_clientTicket": {
       "type": "object",
       "properties": {
         "id": {
@@ -440,18 +446,18 @@
         }
       }
     },
-    "apiTicketCreateResponse": {
+    "api_clientTicketCreateResponse": {
       "type": "object",
       "properties": {
         "ticket": {
-          "$ref": "#/definitions/apiTicket"
+          "$ref": "#/definitions/api_clientTicket"
         }
       }
     },
-    "apiTicketDeleteResponse": {
+    "api_clientTicketDeleteResponse": {
       "type": "object"
     },
-    "apiUserAuthRequest": {
+    "api_clientUserAuthRequest": {
       "type": "object",
       "properties": {
         "name": {
@@ -468,7 +474,7 @@
         "name"
       ]
     },
-    "apiUserAuthResponse": {
+    "api_clientUserAuthResponse": {
       "type": "object",
       "properties": {
         "token": {

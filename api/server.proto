@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+package api_server;
+option go_package = "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/server;server";
+
+service CinemaBackend {
+  rpc UserAuth (UserAuthRequest) returns (UserAuthResponse) {};
+  rpc Films (FilmsRequest) returns (stream FilmsResponse) {};
+  rpc FilmRoom (FilmRoomRequest) returns (FilmRoomResponse) {};
+  rpc TicketCreate (TicketCreateRequest) returns (TicketCreateResponse) {};
+  rpc TicketDelete (TicketDeleteRequest) returns (TicketDeleteResponse) {};
+  rpc MyTickets (MyTicketsRequest) returns (MyTicketsResponse) {};
+}
+
+message Film {
+  uint64 id = 1;
+  string name = 2;
+}
+
+message Ticket {
+  uint64 id = 1;
+  uint64 filmId = 2;
+  uint64 roomId = 3;
+  uint64 placeId = 4;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// UserAuth endpoint messages
+// ---------------------------------------------------------------------------------------------------------------------
+
+message UserAuthRequest {
+  string name = 1;
+}
+message UserAuthResponse {
+  string token = 1;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Films endpoint messages
+// ---------------------------------------------------------------------------------------------------------------------
+
+message FilmsRequest {
+  uint64 limit = 1;
+  uint64 offset = 2;
+  bool desc = 3;
+}
+message FilmsResponse {
+  Film film = 1;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// FilmRoom endpoint messages
+// ---------------------------------------------------------------------------------------------------------------------
+
+message FilmRoomRequest {
+  uint64 film_id = 1;
+}
+message FilmRoomResponse {
+  Film film = 1;
+  Room room = 2;
+
+  message Room {
+    uint64 id = 1;
+    repeated Place places = 3;
+  }
+
+  message Place {
+    uint64 id = 1;
+    bool isMy = 2;
+    bool isFree = 3;
+  }
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// TicketCreate endpoint messages
+// ---------------------------------------------------------------------------------------------------------------------
+
+message TicketCreateRequest {
+  uint64 film_id = 1;
+  uint64 place_id = 2;
+}
+message TicketCreateResponse {
+  Ticket ticket = 1;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// TicketDelete endpoint messages
+// ---------------------------------------------------------------------------------------------------------------------
+
+message TicketDeleteRequest {
+  uint64 ticket_id = 1;
+}
+message TicketDeleteResponse {}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// MyTickets endpoint messages
+// ---------------------------------------------------------------------------------------------------------------------
+
+message MyTicketsRequest {}
+message MyTicketsResponse {
+  repeated Ticket tickets = 1;
+}

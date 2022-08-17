@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-package api;
-option go_package = "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api;api";
+package api_client;
+option go_package = "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/client;client";
 
 import "google/api/annotations.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
@@ -46,7 +46,7 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
   }
 };
 
-service Cinema {
+service CinemaFrontend {
   rpc UserAuth (UserAuthRequest) returns (UserAuthResponse) {
     option (google.api.http) = {
       post: "/v1/auth"
@@ -59,7 +59,7 @@ service Cinema {
     };
   };
 
-  rpc Films (FilmsRequest) returns (FilmsResponse) {
+  rpc Films (FilmsRequest) returns (stream FilmsResponse) {
     option (google.api.http) = {
       get: "/v1/films"
     };
@@ -225,7 +225,7 @@ message FilmsRequest {
   }];
 }
 message FilmsResponse {
-  repeated Film films = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+  Film film = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     title: "Список фильмов",
     description: "Получение списков фильмов",
   }];

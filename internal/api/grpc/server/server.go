@@ -1,16 +1,16 @@
-package api
+package grpc
 
 import (
 	"context"
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/repository"
-	pb "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api"
+	pbServer "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/server"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 type server struct {
-	pb.UnimplementedCinemaServer
+	pbServer.UnimplementedCinemaBackendServer
 	Deps
 }
 
@@ -18,13 +18,13 @@ type Deps struct {
 	CinemaRepository repository.Cinema
 }
 
-func NewServer(d Deps) pb.CinemaServer {
+func NewServer(d Deps) pbServer.CinemaBackendServer {
 	return &server{
 		Deps: d,
 	}
 }
 
-func (s *server) UserAuth(ctx context.Context, in *pb.UserAuthRequest) (*pb.UserAuthResponse, error) {
+func (s *server) UserAuth(ctx context.Context, in *pbServer.UserAuthRequest) (*pbServer.UserAuthResponse, error) {
 	userName := in.GetName()
 	if len(userName) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "Field: [name] is required")
@@ -32,70 +32,74 @@ func (s *server) UserAuth(ctx context.Context, in *pb.UserAuthRequest) (*pb.User
 
 	user, err := s.CinemaRepository.AuthUser(ctx, userName)
 	if err != nil {
-		return &pb.UserAuthResponse{}, errors.Wrap(err, "error AuthUser")
+		return &pbServer.UserAuthResponse{}, errors.Wrap(err, "Error AuthUser")
 	}
 
-	return &pb.UserAuthResponse{
+	return &pbServer.UserAuthResponse{
 		Token: user.Token,
 	}, nil
 }
 
-func (s *server) Films(ctx context.Context, in *pb.FilmsRequest) (*pb.FilmsResponse, error) {
+func (s *server) Films(in *pbServer.FilmsRequest, stream pbServer.CinemaBackend_FilmsServer) error {
 	limit64 := in.GetLimit()
 	offset64 := in.GetOffset()
 	desc := in.GetDesc()
 
-	films, err := s.CinemaRepository.GetFilms(ctx, limit64, offset64, desc)
+	err := s.CinemaRepository.GetFilms(
+		stream.Context(),
+		limit64,
+		offset64,
+		desc,
+		func(film *pbServer.Film) error {
+			res := &pbServer.FilmsResponse{Film: film}
+			err := stream.Send(res)
+			if err != nil {
+				return err
+			}
+			return nil
+		},
+	)
 	if err != nil {
-		return &pb.FilmsResponse{}, errors.Wrap(err, "error Films")
+		return errors.Wrap(err, "Error Films")
 	}
 
-	result := make([]*pb.Film, 0, len(films))
-	for _, film := range films {
-		result = append(result, &pb.Film{
-			Id:   film.Id,
-			Name: film.Name,
-		})
-	}
-	return &pb.FilmsResponse{
-		Films: result,
-	}, nil
+	return nil
 }
 
-func (s *server) FilmRoom(ctx context.Context, in *pb.FilmRoomRequest) (*pb.FilmRoomResponse, error) {
+func (s *server) FilmRoom(ctx context.Context, in *pbServer.FilmRoomRequest) (*pbServer.FilmRoomResponse, error) {
 	film64 := in.GetFilmId()
 	filmId := uint(film64)
 
 	filmRoom, err := s.CinemaRepository.GetFilmRoom(ctx, filmId, getCurrentUserId(ctx))
 	if err != nil {
-		return &pb.FilmRoomResponse{}, errors.Wrap(err, "error FilmRoom")
+		return &pbServer.FilmRoomResponse{}, errors.Wrap(err, "Error FilmRoom")
 	}
 
-	placesResponse := make([]*pb.FilmRoomResponse_Place, 0, len(filmRoom.Room.Places))
+	placesResponse := make([]*pbServer.FilmRoomResponse_Place, 0, len(filmRoom.Room.Places))
 	for _, place := range filmRoom.Room.Places {
-		placesResponse = append(placesResponse, &pb.FilmRoomResponse_Place{
+		placesResponse = append(placesResponse, &pbServer.FilmRoomResponse_Place{
 			Id:     place.Id,
 			IsFree: place.IsFree,
 			IsMy:   place.IsMy,
 		})
 	}
 
-	FilmResponse := &pb.Film{
+	FilmResponse := &pbServer.Film{
 		Id:   filmRoom.Film.Id,
 		Name: filmRoom.Film.Name,
 	}
-	RoomResponse := &pb.FilmRoomResponse_Room{
+	RoomResponse := &pbServer.FilmRoomResponse_Room{
 		Id:     filmRoom.Room.Id,
 		Places: placesResponse,
 	}
 
-	return &pb.FilmRoomResponse{
+	return &pbServer.FilmRoomResponse{
 		Film: FilmResponse,
 		Room: RoomResponse,
 	}, nil
 }
 
-func (s *server) TicketCreate(ctx context.Context, in *pb.TicketCreateRequest) (*pb.TicketCreateResponse, error) {
+func (s *server) TicketCreate(ctx context.Context, in *pbServer.TicketCreateRequest) (*pbServer.TicketCreateResponse, error) {
 	film64 := in.GetFilmId()
 	place64 := in.GetPlaceId()
 
@@ -107,8 +111,8 @@ func (s *server) TicketCreate(ctx context.Context, in *pb.TicketCreateRequest) (
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &pb.TicketCreateResponse{
-		Ticket: &pb.Ticket{
+	return &pbServer.TicketCreateResponse{
+		Ticket: &pbServer.Ticket{
 			Id:      ticket.Id,
 			FilmId:  ticket.FilmId,
 			RoomId:  ticket.RoomId,
@@ -117,7 +121,7 @@ func (s *server) TicketCreate(ctx context.Context, in *pb.TicketCreateRequest) (
 	}, nil
 }
 
-func (s *server) TicketDelete(ctx context.Context, in *pb.TicketDeleteRequest) (*pb.TicketDeleteResponse, error) {
+func (s *server) TicketDelete(ctx context.Context, in *pbServer.TicketDeleteRequest) (*pbServer.TicketDeleteResponse, error) {
 	ticket64 := in.GetTicketId()
 	ticketId := uint(ticket64)
 
@@ -126,18 +130,18 @@ func (s *server) TicketDelete(ctx context.Context, in *pb.TicketDeleteRequest) (
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &pb.TicketDeleteResponse{}, nil
+	return &pbServer.TicketDeleteResponse{}, nil
 }
 
-func (s *server) MyTickets(ctx context.Context, _ *pb.MyTicketsRequest) (*pb.MyTicketsResponse, error) {
+func (s *server) MyTickets(ctx context.Context, _ *pbServer.MyTicketsRequest) (*pbServer.MyTicketsResponse, error) {
 	tickets, err := s.CinemaRepository.GetMyTickets(ctx, getCurrentUserId(ctx))
 	if err != nil {
-		return &pb.MyTicketsResponse{}, errors.Wrap(err, "Error MyTickets")
+		return &pbServer.MyTicketsResponse{}, errors.Wrap(err, "Error MyTickets")
 	}
 
-	ticketsResponse := make([]*pb.Ticket, 0, len(tickets))
+	ticketsResponse := make([]*pbServer.Ticket, 0, len(tickets))
 	for _, ticket := range tickets {
-		ticketsResponse = append(ticketsResponse, &pb.Ticket{
+		ticketsResponse = append(ticketsResponse, &pbServer.Ticket{
 			Id:      ticket.Id,
 			FilmId:  ticket.FilmId,
 			RoomId:  ticket.RoomId,
@@ -145,7 +149,7 @@ func (s *server) MyTickets(ctx context.Context, _ *pb.MyTicketsRequest) (*pb.MyT
 		})
 	}
 
-	return &pb.MyTicketsResponse{
+	return &pbServer.MyTicketsResponse{
 		Tickets: ticketsResponse,
 	}, nil
 }

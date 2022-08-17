@@ -11,6 +11,11 @@ import (
 	"strings"
 )
 
+type User interface {
+	AuthUser(ctx context.Context, name string) (models.User, error)
+	GetUserIdByToken(ctx context.Context, token string) (uint, error)
+}
+
 func (r *Repository) AuthUser(ctx context.Context, name string) (models.User, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -65,7 +70,7 @@ func (r *Repository) GetUserIdByToken(ctx context.Context, token string) (uint, 
 		return userId, errors.Wrap(err, "Invalid Token. User not found")
 	}
 
-	return uint(userId), nil
+	return userId, nil
 }
 
 func (r *Repository) createUser(ctx context.Context, name string) (models.User, error) {

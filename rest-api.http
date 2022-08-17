@@ -10,34 +10,34 @@ Content-Type: application/json
 
 GET http://localhost:8090/v1/films
 Content-Type: application/json
-Token: dido-1
+Token: JDJhJDEwJGVzcVBiOVRTbXhNa0h1dnRnNURHYWV4Y2Q2SXJ1cER4a3lQTDI1TzFCNXlDblhzN3o5VEVl
 
 ### Список мест в зале для выбранного фильма
 
 GET http://localhost:8090/v1/films/5/room
 Content-Type: application/json
-Token: dido-1
+Token: JDJhJDEwJGVzcVBiOVRTbXhNa0h1dnRnNURHYWV4Y2Q2SXJ1cER4a3lQTDI1TzFCNXlDblhzN3o5VEVl
 
 ### Выбор места в зале(покупка билета)
 
 POST http://localhost:8090/v1/films/5/room/3
 Content-Type: application/json
-Token: dido-1
+Token: JDJhJDEwJGVzcVBiOVRTbXhNa0h1dnRnNURHYWV4Y2Q2SXJ1cER4a3lQTDI1TzFCNXlDblhzN3o5VEVl
 
 ### Выбор места в зале(покупка билета)
 
 POST http://localhost:8090/v1/films/1/room/2
 Content-Type: application/json
-Token: dido-1
+Token: JDJhJDEwJGVzcVBiOVRTbXhNa0h1dnRnNURHYWV4Y2Q2SXJ1cER4a3lQTDI1TzFCNXlDblhzN3o5VEVl
 
 ### Список мох билетов
 
 GET http://localhost:8090/v1/my-tickets
 Content-Type: application/json
-Token: dido-1
+Token: JDJhJDEwJGVzcVBiOVRTbXhNa0h1dnRnNURHYWV4Y2Q2SXJ1cER4a3lQTDI1TzFCNXlDblhzN3o5VEVl
 
 ### Удаление билета номер 1
 
 DELETE http://localhost:8090/v1/ticket/1
 Content-Type: application/json
-Token: dido-1
+Token: JDJhJDEwJGVzcVBiOVRTbXhNa0h1dnRnNURHYWV4Y2Q2SXJ1cER4a3lQTDI1TzFCNXlDblhzN3o5VEVl

@@ -2,12 +2,17 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/models"
 )
+
+type Ticket interface {
+	GetMyTickets(ctx context.Context, currentUserId uint) ([]models.Ticket, error)
+	CreateTicket(ctx context.Context, filmId uint, placeId uint, currentUserId uint) (models.Ticket, error)
+	DeleteTicket(ctx context.Context, ticketId uint, currentUserId uint) error
+}
 
 func (r *Repository) GetMyTickets(ctx context.Context, currentUserId uint) ([]models.Ticket, error) {
 	r.mu.RLock()
@@ -121,7 +126,6 @@ func (r *Repository) CreateTicket(ctx context.Context, filmId uint, placeId uint
 		if !pgxscan.NotFound(err) {
 			return ticket, errors.Wrap(err, "Repository.CreateTicket.SelectTickets")
 		}
-		fmt.Printf("%+v\n", ticket)
 		query, args, err = squirrel.Insert("tickets").
 			Columns("user_id, film_id, room_id, place").
 			Values(currentUserId, filmId, roomDb.Id, placeId).
