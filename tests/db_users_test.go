@@ -80,7 +80,7 @@ func TestGetUserIdByToken(t *testing.T) {
 		assert.Equal(t, res, uint(apiResp.Id))
 	})
 
-	t.Run("fail", func(t *testing.T) {
+	t.Run("error", func(t *testing.T) {
 		Db.SetUp(t)
 		defer Db.TearDown()
 

@@ -15,7 +15,7 @@ import (
 )
 
 func TestTicketCreate(t *testing.T) {
-	t.Run("fail", func(t *testing.T) {
+	t.Run("error", func(t *testing.T) {
 		t.Run("empty header token", func(t *testing.T) {
 			//arrange
 			Db.SetUp(t)

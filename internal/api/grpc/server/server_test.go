@@ -81,7 +81,7 @@ func TestUserAuth(t *testing.T) {
 }
 
 func TestFilmRoom(t *testing.T) {
-	t.Run("FilmRoomSuccess", func(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
 		// arrange
 		f := serverSetUp(t)
 
@@ -143,7 +143,7 @@ func TestFilmRoom(t *testing.T) {
 		assert.Equal(t, resp, respApi)
 	})
 
-	t.Run("FilmRoomFail", func(t *testing.T) {
+	t.Run("error", func(t *testing.T) {
 		// arrange
 		f := serverSetUp(t)
 
@@ -293,7 +293,7 @@ func TestTicketDelete(t *testing.T) {
 
 func TestMyTickets(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		t.Run("List", func(t *testing.T) {
+		t.Run("list", func(t *testing.T) {
 			// arrange
 			modelTickets := []models.Ticket{
 				{
@@ -352,7 +352,7 @@ func TestMyTickets(t *testing.T) {
 			assert.Equal(t, resp, respApi)
 		})
 
-		t.Run("One", func(t *testing.T) {
+		t.Run("one", func(t *testing.T) {
 			// arrange
 			modelTickets := []models.Ticket{
 				{
@@ -385,7 +385,7 @@ func TestMyTickets(t *testing.T) {
 			assert.Equal(t, resp, respApi)
 		})
 
-		t.Run("Empty", func(t *testing.T) {
+		t.Run("empty", func(t *testing.T) {
 			// arrange
 			var modelTickets []models.Ticket
 			respApi := &pbServerApi.MyTicketsResponse{
@@ -405,23 +405,22 @@ func TestMyTickets(t *testing.T) {
 	})
 
 	t.Run("error", func(t *testing.T) {
-		t.Run("RepositoryReturnSomeError", func(t *testing.T) {
-			// arrange
-			modelTickets := []models.Ticket{}
-			repoError := errors.New("some error")
-			respApi := &pbServerApi.MyTicketsResponse{}
+		// arrange
+		modelTickets := []models.Ticket{}
+		repoError := errors.New("some error")
+		respApi := &pbServerApi.MyTicketsResponse{}
 
-			f := serverSetUp(t)
-			f.mockRepo.EXPECT().GetMyTickets(f.ctxWithUser, f.ctxWithUser.Value("userId")).Return(modelTickets, repoError).Times(1)
-			respErr := "Error MyTickets: some error"
+		f := serverSetUp(t)
+		f.mockRepo.EXPECT().GetMyTickets(f.ctxWithUser, f.ctxWithUser.Value("userId")).Return(modelTickets, repoError).Times(1)
+		respErr := "Error MyTickets: some error"
 
-			// act
-			resp, err := f.service.MyTickets(f.ctxWithUser, &pbServerApi.MyTicketsRequest{})
+		// act
+		resp, err := f.service.MyTickets(f.ctxWithUser, &pbServerApi.MyTicketsRequest{})
 
-			// assert
-			assert.EqualError(t, err, respErr)
-			assert.Equal(t, resp, respApi)
-		})
+		// assert
+		assert.EqualError(t, err, respErr)
+		assert.Equal(t, resp, respApi)
+
 	})
 }
 

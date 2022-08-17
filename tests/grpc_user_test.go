@@ -12,7 +12,7 @@ import (
 )
 
 func TestUserAuth(t *testing.T) {
-	t.Run("fail", func(t *testing.T) {
+	t.Run("error", func(t *testing.T) {
 		t.Run("empty name", func(t *testing.T) {
 			//arrange
 
