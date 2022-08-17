@@ -92,7 +92,7 @@ func TestGetUserIdByToken(t *testing.T) {
 		res, err := Repository.GetUserIdByToken(context.Background(), token)
 
 		// assert
-		assert.EqualError(t, err, "Invalid Token. User not found: no rows in result set")
+		assert.EqualError(t, err, "Invalid Token. User not found by token")
 		assert.Equal(t, res, resUserId)
 	})
 }
