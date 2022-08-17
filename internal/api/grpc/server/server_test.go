@@ -28,7 +28,7 @@ func TestUserAuth(t *testing.T) {
 			Token: token,
 		}
 
-		f := cinemaSetUp(t)
+		f := serverSetUp(t)
 		f.mockRepo.EXPECT().AuthUser(f.ctx, name).Return(modelUser, nil).Times(1)
 
 		// act
@@ -40,9 +40,9 @@ func TestUserAuth(t *testing.T) {
 	})
 
 	t.Run("error", func(t *testing.T) {
-		t.Run("EmptyName", func(t *testing.T) {
+		t.Run("empty name", func(t *testing.T) {
 			// arrange
-			f := cinemaSetUp(t)
+			f := serverSetUp(t)
 			inApi := &pbServerApi.UserAuthRequest{
 				Name: "",
 			}
@@ -55,7 +55,7 @@ func TestUserAuth(t *testing.T) {
 			assert.EqualError(t, err, respErr)
 		})
 
-		t.Run("RepositoryUserReturnSomeError", func(t *testing.T) {
+		t.Run("some error", func(t *testing.T) {
 			// arrange
 			name := "test-error"
 			modelUser := models.User{}
@@ -67,7 +67,7 @@ func TestUserAuth(t *testing.T) {
 			respApi := &pbServerApi.UserAuthResponse{}
 			respErr := "Error AuthUser: some error"
 
-			f := cinemaSetUp(t)
+			f := serverSetUp(t)
 			f.mockRepo.EXPECT().AuthUser(f.ctx, name).Return(modelUser, repoError).Times(1)
 
 			// act
@@ -83,7 +83,7 @@ func TestUserAuth(t *testing.T) {
 func TestFilmRoom(t *testing.T) {
 	t.Run("FilmRoomSuccess", func(t *testing.T) {
 		// arrange
-		f := cinemaSetUp(t)
+		f := serverSetUp(t)
 
 		filmId := uint(1)
 		userId := f.ctxWithUser.Value("userId").(uint)
@@ -145,7 +145,7 @@ func TestFilmRoom(t *testing.T) {
 
 	t.Run("FilmRoomFail", func(t *testing.T) {
 		// arrange
-		f := cinemaSetUp(t)
+		f := serverSetUp(t)
 
 		filmId := uint(1)
 		userId := f.ctxWithUser.Value("userId").(uint)
@@ -186,7 +186,7 @@ func TestFilmRoom(t *testing.T) {
 func TestTicketCreate(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// arrange
-		f := cinemaSetUp(t)
+		f := serverSetUp(t)
 
 		filmId := uint(1)
 		placeId := uint(5)
@@ -224,7 +224,7 @@ func TestTicketCreate(t *testing.T) {
 
 	t.Run("error", func(t *testing.T) {
 		// arrange
-		f := cinemaSetUp(t)
+		f := serverSetUp(t)
 
 		var modelTicket models.Ticket
 		filmId := uint(1)
@@ -258,7 +258,7 @@ func TestTicketDelete(t *testing.T) {
 		}
 
 		respApi := &pbServerApi.TicketDeleteResponse{}
-		f := cinemaSetUp(t)
+		f := serverSetUp(t)
 		f.mockRepo.EXPECT().DeleteTicket(f.ctxWithUser, ticketId, f.ctxWithUser.Value("userId")).Return(nil).Times(1)
 
 		// act
@@ -279,7 +279,7 @@ func TestTicketDelete(t *testing.T) {
 		repoError := errors.New("some error")
 		respErr := "rpc error: code = InvalidArgument desc = some error"
 
-		f := cinemaSetUp(t)
+		f := serverSetUp(t)
 		f.mockRepo.EXPECT().DeleteTicket(f.ctxWithUser, ticketId, f.ctxWithUser.Value("userId")).Return(repoError).Times(1)
 
 		// act
@@ -341,7 +341,7 @@ func TestMyTickets(t *testing.T) {
 				},
 			}
 
-			f := cinemaSetUp(t)
+			f := serverSetUp(t)
 			f.mockRepo.EXPECT().GetMyTickets(f.ctxWithUser, f.ctxWithUser.Value("userId")).Return(modelTickets, nil).Times(1)
 
 			// act
@@ -374,7 +374,7 @@ func TestMyTickets(t *testing.T) {
 				},
 			}
 
-			f := cinemaSetUp(t)
+			f := serverSetUp(t)
 			f.mockRepo.EXPECT().GetMyTickets(f.ctxWithUser, f.ctxWithUser.Value("userId")).Return(modelTickets, nil).Times(1)
 
 			// act
@@ -392,7 +392,7 @@ func TestMyTickets(t *testing.T) {
 				Tickets: []*pbServerApi.Ticket{},
 			}
 
-			f := cinemaSetUp(t)
+			f := serverSetUp(t)
 			f.mockRepo.EXPECT().GetMyTickets(f.ctxWithUser, f.ctxWithUser.Value("userId")).Return(modelTickets, nil).Times(1)
 
 			// act
@@ -411,7 +411,7 @@ func TestMyTickets(t *testing.T) {
 			repoError := errors.New("some error")
 			respApi := &pbServerApi.MyTicketsResponse{}
 
-			f := cinemaSetUp(t)
+			f := serverSetUp(t)
 			f.mockRepo.EXPECT().GetMyTickets(f.ctxWithUser, f.ctxWithUser.Value("userId")).Return(modelTickets, repoError).Times(1)
 			respErr := "Error MyTickets: some error"
 
@@ -426,7 +426,7 @@ func TestMyTickets(t *testing.T) {
 }
 
 func TestGetCurrentUserId(t *testing.T) {
-	f := cinemaSetUp(t)
+	f := serverSetUp(t)
 
 	// arrange
 	tests := []struct {

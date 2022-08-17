@@ -14,7 +14,7 @@ type cinemaFixture struct {
 	service     *server
 }
 
-func cinemaSetUp(t *testing.T) cinemaFixture {
+func serverSetUp(t *testing.T) cinemaFixture {
 	t.Parallel()
 
 	mockCtrl := gomock.NewController(t)

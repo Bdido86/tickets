@@ -1,4 +1,4 @@
-//go:generate mockgen -source ./server.go -destination=./mocks/server.go -package=mock_server
+//go:generate mockgen  -destination=./mocks/server.go -package=mock_server -source=./../../../../pkg/api/server/server_grpc.pb.go CinemaBackendClient
 
 package grpc
 

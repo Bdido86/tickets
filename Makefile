@@ -47,3 +47,8 @@ migrate-status:
 .buf-generate:
 	buf mod update
 	buf generate
+
+.PHONY: .test
+.test:
+	$(info Running tests...)
+	go test ./...

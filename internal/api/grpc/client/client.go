@@ -20,7 +20,7 @@ type Deps struct {
 	Server pbServer.CinemaBackendClient
 }
 
-func NewServer(d Deps) pbClient.CinemaFrontendServer {
+func NewServer(d Deps) *server {
 	return &server{
 		Deps: d,
 	}
