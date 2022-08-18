@@ -59,8 +59,8 @@ migrate-status:
 
 
 .PHONY: generate-fixture
-FILE_GENERATOR_FIXTURE = $(if $(filename),$(filename),"./third_party/generator-fixture/test-structures.go")
+FILE_GENERATOR_FIXTURE = $(if $(filename),$(filename),"./third_party/generator_fixture/test-structures.go")
 generate-fixture:
 	$(info Running generate structures ...)
-	go run ./third_party/generator-fixture/generator.go --filename $(FILE_GENERATOR_FIXTURE)
+	go run ./third_party/generator_fixture/generator.go --filename $(FILE_GENERATOR_FIXTURE)
 

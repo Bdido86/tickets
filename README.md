@@ -50,7 +50,7 @@
 `make .test`
 
 #### Генератор структур
-Файл генераци лежит по пути `./third_party/generator-fixture/generator.go`, там же находиться и тестовый файл для генерации.  
+Файл генераци лежит по пути `./third_party/generator_fixture/generator.go`, там же находиться и тестовый файл для генерации.  
 Команда запуска:    
 `go run generator.go --filename test-structures.go` - запускать из каталога файла(перейти в каталог)  
 Можно так же запустить через make из корня сайта    
