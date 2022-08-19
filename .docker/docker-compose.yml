@@ -22,6 +22,23 @@ services:
     networks:
       - somenet
 
+  postgres-qa:
+    image: postgres:14.4
+    container_name: 'qa-postgresql-movie-tickets'
+    environment:
+      POSTGRES_USER: ${QA_DB_USER}
+      POSTGRES_PASSWORD: ${QA_DB_PASSWORD}
+      POSTGRES_DB: ${QA_DB_NAME}
+    volumes:
+      - ./postgres/data-qa:/var/lib/postgresql/data # том для того, чтобы при перезапуске контейнера все данные сохранялись
+      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf # конфиг БД
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    ports:
+      - ${QA_DB_PORT}:5432
+    restart: always
+    networks:
+      - somenet
+
   pgbouncer:
     image: edoburu/pgbouncer
     container_name: 'pgbouncer-postgresql-movie-tickets'

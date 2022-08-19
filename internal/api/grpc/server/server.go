@@ -1,3 +1,5 @@
+//go:generate mockgen  -destination=./mocks/server.go -package=mock_server -source=./../../../../pkg/api/server/server_grpc.pb.go CinemaBackendClient
+
 package grpc
 
 import (
@@ -18,7 +20,7 @@ type Deps struct {
 	CinemaRepository repository.Cinema
 }
 
-func NewServer(d Deps) pbServer.CinemaBackendServer {
+func NewServer(d Deps) *server {
 	return &server{
 		Deps: d,
 	}

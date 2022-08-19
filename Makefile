@@ -25,6 +25,9 @@ migrate:
 migrate-status:
 	goose -dir=${GOOSE_MIGRATION_DIR} ${GOOSE_DRIVER} ${GOOSE_DBSTRING} status
 
+.PHONY: .migrate-test
+.migrate-qa:
+	goose -dir=${QA_GOOSE_MIGRATION_DIR} ${QA_GOOSE_DRIVER} ${QA_GOOSE_DBSTRING} up
 
 .PHONY: .dev-toolscd .protoc
 .dev-tools:
@@ -44,3 +47,20 @@ migrate-status:
 .buf-generate:
 	buf mod update
 	buf generate
+
+.PHONY: .test .test-integration
+.test:
+	$(info Running tests...)
+	go test ./...
+
+.test-integration:
+	$(info Running tests integration ...)
+	go test -tags=integration ./tests -v
+
+
+.PHONY: .generate-fixture
+FILE_GENERATOR_FIXTURE = $(if $(filename),$(filename),"./third_party/generators/fixture/test/structures.go")
+.generate-fixture:
+	$(info Running generate structures ...)
+	go run ./third_party/generators/fixture/generator.go --filename $(FILE_GENERATOR_FIXTURE)
+
