@@ -1,4 +1,4 @@
-package main
+package fixture_test
 
 type User struct {
 	Id      int

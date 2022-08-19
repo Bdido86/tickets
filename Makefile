@@ -58,9 +58,9 @@ migrate-status:
 	go test -tags=integration ./tests -v
 
 
-.PHONY: generate-fixture
-FILE_GENERATOR_FIXTURE = $(if $(filename),$(filename),"./third_party/generator_fixture/test-structures.go")
-generate-fixture:
+.PHONY: .generate-fixture
+FILE_GENERATOR_FIXTURE = $(if $(filename),$(filename),"./third_party/generators/fixture/test/structures.go")
+.generate-fixture:
 	$(info Running generate structures ...)
-	go run ./third_party/generator_fixture/generator.go --filename $(FILE_GENERATOR_FIXTURE)
+	go run ./third_party/generators/fixture/generator.go --filename $(FILE_GENERATOR_FIXTURE)
 
