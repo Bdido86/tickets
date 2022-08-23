@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/broker"
 	pbClient "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/client"
 	pbServer "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/server"
 	"google.golang.org/grpc/codes"
@@ -18,6 +19,7 @@ type server struct {
 
 type Deps struct {
 	Server pbServer.CinemaBackendClient
+	Broker broker.Broker
 }
 
 func NewServer(d Deps) *server {
@@ -180,7 +182,7 @@ func (s *server) TicketDelete(ctx context.Context, in *pbClient.TicketDeleteRequ
 		return nil, status.Error(codes.InvalidArgument, "Field: [ticketId] is required and > 0")
 	}
 	if ticket64 > 500 {
-		return nil, status.Error(codes.InvalidArgument, "Field: [placeId] is too big. Maximum 500")
+		return nil, status.Error(codes.InvalidArgument, "Field: [ticket64] is too big. Maximum 500")
 	}
 
 	inServer := &pbServer.TicketDeleteRequest{
@@ -215,6 +217,49 @@ func (s *server) MyTickets(ctx context.Context, _ *pbClient.MyTicketsRequest) (*
 	return &pbClient.MyTicketsResponse{
 		Tickets: tickets,
 	}, nil
+}
+
+func (s *server) TicketDeleteAsync(ctx context.Context, in *pbClient.TicketDeleteRequestAsync) (*pbClient.TicketDeleteResponseAsync, error) {
+	ticket64 := in.GetTicketId()
+	if ticket64 == 0 {
+		return nil, status.Error(codes.InvalidArgument, "Field: [ticketId] is required and > 0")
+	}
+	if ticket64 > 500 {
+		return nil, status.Error(codes.InvalidArgument, "Field: [ticket64] is too big. Maximum 500")
+	}
+
+	ctx = prepareContext(ctx)
+	err := s.Broker.DeleteTicket(ctx, uint(ticket64))
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbClient.TicketDeleteResponseAsync{}, nil
+}
+
+func (s *server) TicketCreateAsync(ctx context.Context, in *pbClient.TicketCreateRequestAsync) (*pbClient.TicketCreateResponseAsync, error) {
+	film64 := in.GetFilmId()
+	place64 := in.GetPlaceId()
+	if film64 == 0 {
+		return nil, status.Error(codes.InvalidArgument, "Field: [filmId] is required and > 0")
+	}
+	if film64 > 20 {
+		return nil, status.Error(codes.InvalidArgument, "Field: [filmId] is too big. Maximum 20")
+	}
+	if place64 == 0 {
+		return nil, status.Error(codes.InvalidArgument, "Field: [placeId] is required and > 0")
+	}
+	if place64 > 50 {
+		return nil, status.Error(codes.InvalidArgument, "Field: [placeId] is too big. Maximum 50")
+	}
+
+	ctx = prepareContext(ctx)
+	err := s.Broker.CreateTicket(ctx, uint(film64), uint(place64))
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbClient.TicketCreateResponseAsync{}, nil
 }
 
 func prepareContext(ctx context.Context) context.Context {

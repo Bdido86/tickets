@@ -5,6 +5,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	grpcApiClient "gitlab.ozon.dev/Bdido86/movie-tickets/internal/api/grpc/client"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/config"
+	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/broker/kafka"
 	pbApiClient "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/client"
 	pbApiServer "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/server"
 	"google.golang.org/grpc"
@@ -38,7 +39,7 @@ func main() {
 	runRest(ctx, clientPort, clientGRPCPort, c.RequestTimeOutInMilliSecond())
 }
 
-func runRestGrpc(_ context.Context, clientGRPCPort string, serverPort string) {
+func runRestGrpc(ctx context.Context, clientGRPCPort string, serverPort string) {
 	listener, err := net.Listen("tcp", clientGRPCPort)
 	if err != nil {
 		log.Fatalf("Error clientGRPCPort connect tcp: %v", err)
@@ -51,8 +52,16 @@ func runRestGrpc(_ context.Context, clientGRPCPort string, serverPort string) {
 	}
 	defer serverConn.Close()
 
+	broker := kafka.NewBroker()
+	defer func() {
+		broker.Close(ctx)
+	}()
+
 	server := pbApiServer.NewCinemaBackendClient(serverConn)
-	clientServer := grpcApiClient.Deps{Server: server}
+	clientServer := grpcApiClient.Deps{
+		Server: server,
+		Broker: broker,
+	}
 
 	option := grpc.UnaryInterceptor(AuthInterceptor)
 	grpcServer := grpc.NewServer(option)

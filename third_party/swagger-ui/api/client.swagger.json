@@ -237,6 +237,60 @@
         ]
       }
     },
+    "/v1/films/{filmId}/room/{placeId}/async": {
+      "post": {
+        "summary": "Покупка билета в кино(фильм, зал, место) через очередь сообщений(broker)",
+        "operationId": "createTicketAsync",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/api_clientTicketCreateResponseAsync"
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {}
+          },
+          "401": {
+            "description": "Token is invalid",
+            "schema": {}
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "filmId",
+            "description": "Фильм на который покупается билет",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "placeId",
+            "description": "Место в кинотеатре",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "ticket"
+        ],
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/v1/my-tickets": {
       "get": {
         "summary": "Список билетов пользователя",
@@ -282,6 +336,52 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/api_clientTicketDeleteResponse"
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {}
+          },
+          "401": {
+            "description": "Token is invalid",
+            "schema": {}
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "ticketId",
+            "description": "Билет который будет удален",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "ticket"
+        ],
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/ticket/{ticketId}/async": {
+      "delete": {
+        "summary": "Удаление билета через очередь сообщений(broker)",
+        "operationId": "deleteTicketAsync",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/api_clientTicketDeleteResponseAsync"
             }
           },
           "400": {
@@ -454,7 +554,13 @@
         }
       }
     },
+    "api_clientTicketCreateResponseAsync": {
+      "type": "object"
+    },
     "api_clientTicketDeleteResponse": {
+      "type": "object"
+    },
+    "api_clientTicketDeleteResponseAsync": {
       "type": "object"
     },
     "api_clientUserAuthRequest": {
