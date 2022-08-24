@@ -5,6 +5,7 @@ package grpc
 import (
 	"context"
 	"github.com/pkg/errors"
+	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/logger"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/repository"
 	pbServer "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/server"
 	"google.golang.org/grpc/codes"
@@ -17,6 +18,7 @@ type server struct {
 }
 
 type Deps struct {
+	Logger           logger.Logger
 	CinemaRepository repository.Cinema
 }
 
@@ -29,11 +31,13 @@ func NewServer(d Deps) *server {
 func (s *server) UserAuth(ctx context.Context, in *pbServer.UserAuthRequest) (*pbServer.UserAuthResponse, error) {
 	userName := in.GetName()
 	if len(userName) == 0 {
+		s.Logger.Info("Field: [name] is required")
 		return nil, status.Error(codes.InvalidArgument, "Field: [name] is required")
 	}
 
 	user, err := s.CinemaRepository.AuthUser(ctx, userName)
 	if err != nil {
+		s.Logger.Errorf("error authUser %v", err)
 		return &pbServer.UserAuthResponse{}, errors.Wrap(err, "Error AuthUser")
 	}
 
@@ -62,6 +66,7 @@ func (s *server) Films(in *pbServer.FilmsRequest, stream pbServer.CinemaBackend_
 		},
 	)
 	if err != nil {
+		s.Logger.Errorf("error Films %v", err)
 		return errors.Wrap(err, "Error Films")
 	}
 
@@ -74,6 +79,7 @@ func (s *server) FilmRoom(ctx context.Context, in *pbServer.FilmRoomRequest) (*p
 
 	filmRoom, err := s.CinemaRepository.GetFilmRoom(ctx, filmId, getCurrentUserId(ctx))
 	if err != nil {
+		s.Logger.Info("Error FilmRoom")
 		return &pbServer.FilmRoomResponse{}, errors.Wrap(err, "Error FilmRoom")
 	}
 
@@ -110,6 +116,7 @@ func (s *server) TicketCreate(ctx context.Context, in *pbServer.TicketCreateRequ
 
 	ticket, err := s.CinemaRepository.CreateTicket(ctx, filmId, placeId, getCurrentUserId(ctx))
 	if err != nil {
+		s.Logger.Errorf("ticket create %v", err)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -129,6 +136,7 @@ func (s *server) TicketDelete(ctx context.Context, in *pbServer.TicketDeleteRequ
 
 	err := s.CinemaRepository.DeleteTicket(ctx, ticketId, getCurrentUserId(ctx))
 	if err != nil {
+		s.Logger.Errorf("ticket delete %v", err)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -138,6 +146,7 @@ func (s *server) TicketDelete(ctx context.Context, in *pbServer.TicketDeleteRequ
 func (s *server) MyTickets(ctx context.Context, _ *pbServer.MyTicketsRequest) (*pbServer.MyTicketsResponse, error) {
 	tickets, err := s.CinemaRepository.GetMyTickets(ctx, getCurrentUserId(ctx))
 	if err != nil {
+		s.Logger.Errorf("my tickets %v", err)
 		return &pbServer.MyTicketsResponse{}, errors.Wrap(err, "Error MyTickets")
 	}
 

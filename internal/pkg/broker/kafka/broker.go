@@ -6,16 +6,17 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/broker"
+	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/logger"
 	"google.golang.org/grpc/metadata"
 	"log"
 )
 
 type Kafka struct {
-	syncProducer  sarama.SyncProducer
 	asyncProducer sarama.AsyncProducer
+	logger        logger.Logger
 }
 
-func NewBroker() broker.Broker {
+func NewBroker(logger logger.Logger) broker.Broker {
 	cfg := sarama.NewConfig()
 	cfg.Producer.Return.Successes = true
 	asyncProducer, err := sarama.NewAsyncProducer(brokers, cfg)
@@ -25,6 +26,7 @@ func NewBroker() broker.Broker {
 
 	k := &Kafka{
 		asyncProducer: asyncProducer,
+		logger:        logger,
 	}
 
 	k.checkAsyncProducer()
@@ -35,7 +37,7 @@ func NewBroker() broker.Broker {
 func (k *Kafka) Close(_ context.Context) error {
 	defer func() {
 		if err := k.asyncProducer.Close(); err != nil {
-			log.Fatalln(err)
+			k.logger.Fatalln(err)
 		}
 	}()
 
@@ -49,6 +51,7 @@ func (k *Kafka) DeleteTicket(ctx context.Context, ticketId uint) error {
 	}
 	jsonRequest, err := json.Marshal(request)
 	if err != nil {
+		k.logger.Errorf("kafka DeleteTicket %v", err)
 		return errors.Wrap(err, "broker/kafka DeleteTicket")
 	}
 
@@ -68,6 +71,7 @@ func (k *Kafka) CreateTicket(ctx context.Context, filmId, placeId uint) error {
 	}
 	jsonRequest, err := json.Marshal(request)
 	if err != nil {
+		k.logger.Errorf("kafka CreateTicket %v", err)
 		return errors.Wrap(err, "broker/kafka CreateTicket")
 	}
 

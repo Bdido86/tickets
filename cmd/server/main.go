@@ -6,13 +6,13 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	apiGrpcServer "gitlab.ozon.dev/Bdido86/movie-tickets/internal/api/grpc/server"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/config"
+	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/logger"
 	postgres "gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/repository/postgres"
 	pbApiServer "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/server"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"log"
 	"net"
 	"strings"
 )
@@ -29,6 +29,7 @@ func main() {
 	defer cancel()
 
 	c := config.GetConfig()
+	logger := logger.GetLogger(c.DebugLevel())
 
 	serverAddress := ":" + c.ServerPort()
 
@@ -39,29 +40,32 @@ func main() {
 
 	pool, err := pgxpool.Connect(ctx, psqlConn)
 	if err != nil {
-		log.Fatalf("Can't connect to database: %v", err)
+		logger.Fatalf("Can't connect to database: %v", err)
 	}
 	defer pool.Close()
 
 	if err := pool.Ping(ctx); err != nil {
-		log.Fatalf("Ping database error: %v", err)
+		logger.Fatalf("Ping database error: %v", err)
 	}
 
 	listener, err := net.Listen("tcp", serverAddress)
 	if err != nil {
-		log.Fatalf("Error GRPCServer connect tcp: %v", err)
+		logger.Fatalf("Error GRPCServer connect tcp: %v", err)
 	}
 	defer listener.Close()
 
-	depsRepo = apiGrpcServer.Deps{CinemaRepository: postgres.NewRepository(pool)}
+	depsRepo = apiGrpcServer.Deps{
+		Logger:           logger,
+		CinemaRepository: postgres.NewRepository(pool, logger),
+	}
 
 	option := grpc.UnaryInterceptor(AuthInterceptor)
 	grpcServer := grpc.NewServer(option)
 	pbApiServer.RegisterCinemaBackendServer(grpcServer, apiGrpcServer.NewServer(depsRepo))
 
-	log.Println("Serving SERVER GRPC on " + serverAddress)
+	logger.Infof("Serving SERVER GRPC on %s", serverAddress)
 	if err = grpcServer.Serve(listener); err != nil {
-		log.Fatalf("Error GRPCServer listen: %v", err)
+		logger.Fatalf("Error GRPCServer listen: %v", err)
 	}
 }
 

@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/broker"
+	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/logger"
 	pbClient "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/client"
 	pbServer "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/server"
 	"google.golang.org/grpc/codes"
@@ -20,6 +21,7 @@ type server struct {
 type Deps struct {
 	Server pbServer.CinemaBackendClient
 	Broker broker.Broker
+	Logger logger.Logger
 }
 
 func NewServer(d Deps) *server {
@@ -31,9 +33,11 @@ func NewServer(d Deps) *server {
 func (s *server) UserAuth(ctx context.Context, in *pbClient.UserAuthRequest) (*pbClient.UserAuthResponse, error) {
 	userName := strings.Trim(in.GetName(), " ")
 	if len(userName) == 0 {
+		s.Logger.Info("field: [name] is required")
 		return nil, status.Error(codes.InvalidArgument, "Field: [name] is required")
 	}
 	if len(userName) < 2 || len(userName) > 40 {
+		s.Logger.Info("field: [name] must be between 2-40 chars!")
 		return nil, status.Error(codes.InvalidArgument, "Field: [name] must be between 2-40 chars!")
 	}
 
@@ -42,6 +46,7 @@ func (s *server) UserAuth(ctx context.Context, in *pbClient.UserAuthRequest) (*p
 	}
 	serverUserAuthResponse, err := s.Server.UserAuth(ctx, inServer)
 	if err != nil {
+		s.Logger.Errorf("error server UserAuth %v", err)
 		return nil, err
 	}
 
@@ -54,9 +59,11 @@ func (s *server) Films(in *pbClient.FilmsRequest, stream pbClient.CinemaFrontend
 	limit64 := in.GetLimit()
 	offset64 := in.GetOffset()
 	if limit64 > 100 {
+		s.Logger.Info("Field: [limit] is too big. Maximum 100")
 		return status.Error(codes.InvalidArgument, "Field: [limit] is too big. Maximum 100")
 	}
 	if offset64 > 100 {
+		s.Logger.Info("Field: [offset] is too big. Maximum 100")
 		return status.Error(codes.InvalidArgument, "Field: [offset] is too big. Maximum 100")
 	}
 
@@ -69,6 +76,7 @@ func (s *server) Films(in *pbClient.FilmsRequest, stream pbClient.CinemaFrontend
 	ctx = prepareContext(ctx)
 	serverStreamFilm, err := s.Server.Films(ctx, inServer)
 	if err != nil {
+		s.Logger.Errorf("cannot get films stream %v", err)
 		return status.Error(codes.Unavailable, "Cannot get films stream")
 	}
 
@@ -78,6 +86,7 @@ func (s *server) Films(in *pbClient.FilmsRequest, stream pbClient.CinemaFrontend
 			return nil
 		}
 		if err != nil {
+			s.Logger.Errorf("cannot receive response stream %v", err)
 			return status.Error(codes.Unavailable, "Cannot receive response stream")
 		}
 
@@ -92,6 +101,7 @@ func (s *server) Films(in *pbClient.FilmsRequest, stream pbClient.CinemaFrontend
 		}
 		err = stream.Send(resFilm)
 		if err != nil {
+			s.Logger.Errorf("cannot receive response stream film %v", err)
 			return status.Error(codes.Unavailable, "Cannot receive response stream film")
 		}
 	}
@@ -102,9 +112,11 @@ func (s *server) Films(in *pbClient.FilmsRequest, stream pbClient.CinemaFrontend
 func (s *server) FilmRoom(ctx context.Context, in *pbClient.FilmRoomRequest) (*pbClient.FilmRoomResponse, error) {
 	film64 := in.GetFilmId()
 	if film64 == 0 {
+		s.Logger.Info("Field: [filmId] is required and > 0")
 		return nil, status.Error(codes.InvalidArgument, "Field: [filmId] is required and > 0")
 	}
 	if film64 > 20 {
+		s.Logger.Info("Field: [filmId] is too big. Maximum 20")
 		return nil, status.Error(codes.InvalidArgument, "Field: [filmId] is too big. Maximum 20")
 	}
 
@@ -114,6 +126,7 @@ func (s *server) FilmRoom(ctx context.Context, in *pbClient.FilmRoomRequest) (*p
 	ctx = prepareContext(ctx)
 	serverFilmRoomResponse, err := s.Server.FilmRoom(ctx, inServer)
 	if err != nil {
+		s.Logger.Errorf("server film %v", err)
 		return nil, err
 	}
 
@@ -144,15 +157,19 @@ func (s *server) TicketCreate(ctx context.Context, in *pbClient.TicketCreateRequ
 	film64 := in.GetFilmId()
 	place64 := in.GetPlaceId()
 	if film64 == 0 {
+		s.Logger.Info("Field: [filmId] is required and > 0")
 		return nil, status.Error(codes.InvalidArgument, "Field: [filmId] is required and > 0")
 	}
 	if film64 > 20 {
+		s.Logger.Info("Field: [filmId] is too big. Maximum 20")
 		return nil, status.Error(codes.InvalidArgument, "Field: [filmId] is too big. Maximum 20")
 	}
 	if place64 == 0 {
+		s.Logger.Info("Field: [placeId] is required and > 0")
 		return nil, status.Error(codes.InvalidArgument, "Field: [placeId] is required and > 0")
 	}
 	if place64 > 50 {
+		s.Logger.Info("Field: [placeId] is too big. Maximum 50")
 		return nil, status.Error(codes.InvalidArgument, "Field: [placeId] is too big. Maximum 50")
 	}
 
@@ -163,6 +180,7 @@ func (s *server) TicketCreate(ctx context.Context, in *pbClient.TicketCreateRequ
 	ctx = prepareContext(ctx)
 	serverTicketCreateResponse, err := s.Server.TicketCreate(ctx, inServer)
 	if err != nil {
+		s.Logger.Errorf("server ticket create %v", err)
 		return nil, err
 	}
 
@@ -179,9 +197,11 @@ func (s *server) TicketCreate(ctx context.Context, in *pbClient.TicketCreateRequ
 func (s *server) TicketDelete(ctx context.Context, in *pbClient.TicketDeleteRequest) (*pbClient.TicketDeleteResponse, error) {
 	ticket64 := in.GetTicketId()
 	if ticket64 == 0 {
+		s.Logger.Info("Field: [ticketId] is required and > 0")
 		return nil, status.Error(codes.InvalidArgument, "Field: [ticketId] is required and > 0")
 	}
 	if ticket64 > 500 {
+		s.Logger.Info("Field: [ticket64] is too big. Maximum 500")
 		return nil, status.Error(codes.InvalidArgument, "Field: [ticket64] is too big. Maximum 500")
 	}
 
@@ -191,6 +211,7 @@ func (s *server) TicketDelete(ctx context.Context, in *pbClient.TicketDeleteRequ
 	ctx = prepareContext(ctx)
 	_, err := s.Server.TicketDelete(ctx, inServer)
 	if err != nil {
+		s.Logger.Errorf("server ticket delete %v", err)
 		return nil, err
 	}
 
@@ -202,6 +223,7 @@ func (s *server) MyTickets(ctx context.Context, _ *pbClient.MyTicketsRequest) (*
 	ctx = prepareContext(ctx)
 	serverMyTicketsResponse, err := s.Server.MyTickets(ctx, inServer)
 	if err != nil {
+		s.Logger.Errorf("server my tickets %v", err)
 		return nil, err
 	}
 
@@ -222,15 +244,18 @@ func (s *server) MyTickets(ctx context.Context, _ *pbClient.MyTicketsRequest) (*
 func (s *server) TicketDeleteAsync(ctx context.Context, in *pbClient.TicketDeleteRequestAsync) (*pbClient.TicketDeleteResponseAsync, error) {
 	ticket64 := in.GetTicketId()
 	if ticket64 == 0 {
+		s.Logger.Info("Field: [ticketId] is required and > 0")
 		return nil, status.Error(codes.InvalidArgument, "Field: [ticketId] is required and > 0")
 	}
 	if ticket64 > 500 {
-		return nil, status.Error(codes.InvalidArgument, "Field: [ticket64] is too big. Maximum 500")
+		s.Logger.Info("Field: [ticketId] is too big. Maximum 500")
+		return nil, status.Error(codes.InvalidArgument, "Field: [ticketId] is too big. Maximum 500")
 	}
 
 	ctx = prepareContext(ctx)
 	err := s.Broker.DeleteTicket(ctx, uint(ticket64))
 	if err != nil {
+		s.Logger.Errorf("broker ticket delete %v", err)
 		return nil, err
 	}
 
@@ -241,21 +266,26 @@ func (s *server) TicketCreateAsync(ctx context.Context, in *pbClient.TicketCreat
 	film64 := in.GetFilmId()
 	place64 := in.GetPlaceId()
 	if film64 == 0 {
+		s.Logger.Info("Field: [filmId] is required and > 0")
 		return nil, status.Error(codes.InvalidArgument, "Field: [filmId] is required and > 0")
 	}
 	if film64 > 20 {
+		s.Logger.Info("Field: [filmId] is too big. Maximum 20")
 		return nil, status.Error(codes.InvalidArgument, "Field: [filmId] is too big. Maximum 20")
 	}
 	if place64 == 0 {
+		s.Logger.Info("Field: [placeId] is required and > 0")
 		return nil, status.Error(codes.InvalidArgument, "Field: [placeId] is required and > 0")
 	}
 	if place64 > 50 {
+		s.Logger.Info("Field: [placeId] is too big. Maximum 50")
 		return nil, status.Error(codes.InvalidArgument, "Field: [placeId] is too big. Maximum 50")
 	}
 
 	ctx = prepareContext(ctx)
 	err := s.Broker.CreateTicket(ctx, uint(film64), uint(place64))
 	if err != nil {
+		s.Logger.Errorf("broker ticket create %v", err)
 		return nil, err
 	}
 

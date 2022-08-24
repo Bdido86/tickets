@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"github.com/Shopify/sarama"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/cnt"
+	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/logger"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/repository"
-	"log"
 	"time"
 )
 
@@ -17,6 +17,7 @@ type consumer struct {
 }
 
 type Deps struct {
+	Logger           logger.Logger
 	CinemaRepository repository.Cinema
 }
 
@@ -38,13 +39,15 @@ func (c *consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 	for {
 		select {
 		case <-session.Context().Done():
-			log.Print("Done")
+			c.Logger.Info("consume Done")
 			return nil
 		case msg, ok := <-claim.Messages():
 			if !ok {
-				log.Print("Data channel closed")
+				c.Logger.Info("consume channel closed")
 				return nil
 			}
+
+			c.Logger.Info("consume channel closed")
 
 			cnt.IncTotal()
 
@@ -54,7 +57,7 @@ func (c *consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 				err := json.Unmarshal(msg.Value, &createTicket)
 				if err != nil {
 					cnt.IncError()
-					log.Printf("on unmarshall: %v", err)
+					c.Logger.Errorf("on unmarshall: %v", err)
 					continue
 				}
 				c.createTicket(&createTicket)
@@ -63,13 +66,13 @@ func (c *consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 				err := json.Unmarshal(msg.Value, &deleteTicket)
 				if err != nil {
 					cnt.IncError()
-					log.Printf("on unmarshall: %v", err)
+					c.Logger.Errorf("on unmarshall: %v", err)
 					continue
 				}
 				c.deleteTicket(&deleteTicket)
 			}
 
-			log.Printf("topic: %v, data: %v", msg.Topic, string(msg.Value))
+			c.Logger.Infof("topic: %v, data: %v", msg.Topic, string(msg.Value))
 			session.MarkMessage(msg, "")
 		}
 	}
@@ -81,12 +84,12 @@ func (c *consumer) Run(ctx context.Context) error {
 
 	client, err := sarama.NewConsumerGroup(brokers, "tickets", cfg)
 	if err != nil {
-		log.Fatalf(err.Error())
+		c.Logger.Fatalf("error run consumer: %v", err)
 	}
 
 	for {
 		if err := client.Consume(ctx, []string{topicTicketCreate, topicTicketDelete}, c); err != nil {
-			log.Printf("on consume: %v", err)
+			c.Logger.Errorf("on consume: %v", err)
 			time.Sleep(time.Second * timeSleep)
 		}
 	}
@@ -97,18 +100,18 @@ func (c *consumer) createTicket(createTicket *createTicketStruct) {
 	userId, err := c.CinemaRepository.GetUserIdByToken(ctx, createTicket.Token)
 	if err != nil {
 		cnt.IncError()
-		log.Printf("not Found user: %v", err)
+		c.Logger.Infof("not found user: %v", err)
 		return
 	}
 
 	if _, err := c.CinemaRepository.CreateTicket(ctx, createTicket.FilmId, createTicket.PlaceId, userId); err != nil {
 		cnt.IncError()
-		log.Printf("error createTicket: %v", err)
+		c.Logger.Errorf("error createTicket: %v", err)
 		return
 	}
 
 	cnt.IncSuccess()
-	log.Printf("success CreateTicket")
+	c.Logger.Info("success createTicket")
 }
 
 func (c *consumer) deleteTicket(deleteTicket *deleteTicketStruct) {
@@ -116,16 +119,16 @@ func (c *consumer) deleteTicket(deleteTicket *deleteTicketStruct) {
 	userId, err := c.CinemaRepository.GetUserIdByToken(ctx, deleteTicket.Token)
 	if err != nil {
 		cnt.IncError()
-		log.Printf("not Found user: %v", err)
+		c.Logger.Infof("not found user: %v", err)
 		return
 	}
 
 	if err := c.CinemaRepository.DeleteTicket(ctx, deleteTicket.Id, userId); err != nil {
 		cnt.IncError()
-		log.Printf("error deleteTicket: %v", err)
+		c.Logger.Errorf("error deleteTicket: %v", err)
 		return
 	}
 
 	cnt.IncSuccess()
-	log.Printf("success deleteTicket")
+	c.Logger.Info("success deleteTicket")
 }

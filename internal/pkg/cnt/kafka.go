@@ -25,7 +25,7 @@ func init() {
 		m:     &sync.RWMutex{},
 		kafka: &kafkaStruct{},
 	}
-	expvar.Publish("Consumer", kafka)
+	expvar.Publish("ConsumerKafka", kafka)
 }
 
 func (c *counterKafka) incTotal() {
