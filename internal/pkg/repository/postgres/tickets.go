@@ -6,6 +6,7 @@ import (
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/models"
+	"go.opencensus.io/trace"
 )
 
 type Ticket interface {
@@ -15,6 +16,9 @@ type Ticket interface {
 }
 
 func (r *Repository) GetMyTickets(ctx context.Context, currentUserId uint) ([]models.Ticket, error) {
+	ctx, span := trace.StartSpan(ctx, "repository/GetMyTickets")
+	defer span.End()
+
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -38,6 +42,9 @@ func (r *Repository) GetMyTickets(ctx context.Context, currentUserId uint) ([]mo
 }
 
 func (r *Repository) DeleteTicket(ctx context.Context, ticketId uint, currentUserId uint) error {
+	ctx, span := trace.StartSpan(ctx, "repository/DeleteTicket")
+	defer span.End()
+
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -80,6 +87,9 @@ func (r *Repository) DeleteTicket(ctx context.Context, ticketId uint, currentUse
 }
 
 func (r *Repository) CreateTicket(ctx context.Context, filmId uint, placeId uint, currentUserId uint) (models.Ticket, error) {
+	ctx, span := trace.StartSpan(ctx, "repository/CreateTicket")
+	defer span.End()
+
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

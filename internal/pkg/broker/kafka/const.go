@@ -3,6 +3,8 @@ package kafka
 const (
 	topicTicketCreate = "TicketCreate"
 	topicTicketDelete = "TicketDelete"
+
+	token = "Token"
 )
 
 var (
@@ -10,12 +12,10 @@ var (
 )
 
 type createTicketStruct struct {
-	FilmId  uint   `json:"film_id"`
-	PlaceId uint   `json:"place_id"`
-	Token   string `json:"token"`
+	FilmId  uint `json:"film_id"`
+	PlaceId uint `json:"place_id"`
 }
 
 type deleteTicketStruct struct {
-	Id    uint   `json:"id"`
-	Token string `json:"token"`
+	Id uint `json:"id"`
 }

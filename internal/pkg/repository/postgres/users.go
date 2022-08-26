@@ -7,6 +7,7 @@ import (
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/models"
+	"go.opencensus.io/trace"
 	"golang.org/x/crypto/bcrypt"
 	"strings"
 )
@@ -17,6 +18,9 @@ type User interface {
 }
 
 func (r *Repository) AuthUser(ctx context.Context, name string) (models.User, error) {
+	ctx, span := trace.StartSpan(ctx, "repository/AuthUser")
+	defer span.End()
+
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -49,6 +53,9 @@ func (r *Repository) AuthUser(ctx context.Context, name string) (models.User, er
 }
 
 func (r *Repository) GetUserIdByToken(ctx context.Context, token string) (uint, error) {
+	ctx, span := trace.StartSpan(ctx, "repository/GetUserIdByToken")
+	defer span.End()
+
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -77,6 +84,9 @@ func (r *Repository) GetUserIdByToken(ctx context.Context, token string) (uint, 
 }
 
 func (r *Repository) createUser(ctx context.Context, name string) (models.User, error) {
+	ctx, span := trace.StartSpan(ctx, "repository/createUser")
+	defer span.End()
+
 	var user models.User
 	token := generateToken(name)
 	query, args, err := squirrel.Insert("users").

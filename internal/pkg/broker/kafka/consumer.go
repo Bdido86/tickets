@@ -3,10 +3,12 @@ package kafka
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/Shopify/sarama"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/cnt"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/logger"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/repository"
+	"go.opencensus.io/trace"
 	"time"
 )
 
@@ -47,9 +49,15 @@ func (c *consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 				return nil
 			}
 
-			c.Logger.Info("consume channel closed")
-
 			cnt.IncTotal()
+
+			ctx := context.Background()
+			spanContext, err := getSpanContextFromHeaders(msg)
+			if err != nil {
+				c.Logger.Errorf("empty X-Span-Context: %v", err)
+			}
+
+			ctx, _ = trace.StartSpanWithRemoteParent(ctx, "broker/consumer/topicTicketDelete", spanContext)
 
 			switch msg.Topic {
 			case topicTicketCreate:
@@ -60,7 +68,15 @@ func (c *consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 					c.Logger.Errorf("on unmarshall: %v", err)
 					continue
 				}
-				c.createTicket(&createTicket)
+
+				tokenValue, err := getTokenFromHeaders(msg)
+				if err != nil {
+					cnt.IncError()
+					c.Logger.Errorf("on unmarshall: %v", err)
+					continue
+				}
+
+				c.createTicket(ctx, &createTicket, tokenValue)
 			case topicTicketDelete:
 				var deleteTicket deleteTicketStruct
 				err := json.Unmarshal(msg.Value, &deleteTicket)
@@ -69,13 +85,40 @@ func (c *consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 					c.Logger.Errorf("on unmarshall: %v", err)
 					continue
 				}
-				c.deleteTicket(&deleteTicket)
+
+				tokenValue, err := getTokenFromHeaders(msg)
+				if err != nil {
+					cnt.IncError()
+					c.Logger.Errorf("on unmarshall: %v", err)
+					continue
+				}
+
+				c.deleteTicket(ctx, &deleteTicket, tokenValue)
 			}
 
-			c.Logger.Infof("topic: %v, data: %v", msg.Topic, string(msg.Value))
 			session.MarkMessage(msg, "")
 		}
 	}
+}
+
+func getTokenFromHeaders(msg *sarama.ConsumerMessage) (string, error) {
+	for _, header := range msg.Headers {
+		if string(header.Key) == "Token" {
+			return string(header.Value), nil
+		}
+	}
+	return "", errors.New("empty token in headers")
+}
+
+func getSpanContextFromHeaders(msg *sarama.ConsumerMessage) (trace.SpanContext, error) {
+	var spanContext trace.SpanContext
+	for _, header := range msg.Headers {
+		if string(header.Key) == "X-Span-Context" && len(header.Key) > 0 {
+			err := json.Unmarshal(header.Key, &spanContext)
+			return spanContext, err
+		}
+	}
+	return spanContext, errors.New("empty X-Span-Context in headers")
 }
 
 func (c *consumer) Run(ctx context.Context) error {
@@ -95,9 +138,11 @@ func (c *consumer) Run(ctx context.Context) error {
 	}
 }
 
-func (c *consumer) createTicket(createTicket *createTicketStruct) {
-	ctx := context.Background()
-	userId, err := c.CinemaRepository.GetUserIdByToken(ctx, createTicket.Token)
+func (c *consumer) createTicket(ctx context.Context, createTicket *createTicketStruct, token string) {
+	ctx, span := trace.StartSpan(ctx, "kafka/consumer/GetFilmRoom")
+	defer span.End()
+
+	userId, err := c.CinemaRepository.GetUserIdByToken(ctx, token)
 	if err != nil {
 		cnt.IncError()
 		c.Logger.Infof("not found user: %v", err)
@@ -114,9 +159,11 @@ func (c *consumer) createTicket(createTicket *createTicketStruct) {
 	c.Logger.Info("success createTicket")
 }
 
-func (c *consumer) deleteTicket(deleteTicket *deleteTicketStruct) {
-	ctx := context.Background()
-	userId, err := c.CinemaRepository.GetUserIdByToken(ctx, deleteTicket.Token)
+func (c *consumer) deleteTicket(ctx context.Context, deleteTicket *deleteTicketStruct, token string) {
+	ctx, span := trace.StartSpan(ctx, "kafka/consumer/deleteTicket")
+	defer span.End()
+
+	userId, err := c.CinemaRepository.GetUserIdByToken(ctx, token)
 	if err != nil {
 		cnt.IncError()
 		c.Logger.Infof("not found user: %v", err)

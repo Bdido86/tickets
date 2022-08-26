@@ -8,6 +8,7 @@ import (
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/logger"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/repository"
 	pbServer "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/server"
+	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -29,6 +30,9 @@ func NewServer(d Deps) *server {
 }
 
 func (s *server) UserAuth(ctx context.Context, in *pbServer.UserAuthRequest) (*pbServer.UserAuthResponse, error) {
+	ctx, span := trace.StartSpan(ctx, "grpc/server/UserAuth")
+	defer span.End()
+
 	userName := in.GetName()
 	if len(userName) == 0 {
 		s.Logger.Info("Field: [name] is required")
@@ -47,6 +51,10 @@ func (s *server) UserAuth(ctx context.Context, in *pbServer.UserAuthRequest) (*p
 }
 
 func (s *server) Films(in *pbServer.FilmsRequest, stream pbServer.CinemaBackend_FilmsServer) error {
+	ctx := stream.Context()
+	ctx, span := trace.StartSpan(ctx, "grpc/server/Films")
+	defer span.End()
+
 	limit64 := in.GetLimit()
 	offset64 := in.GetOffset()
 	desc := in.GetDesc()
@@ -74,6 +82,9 @@ func (s *server) Films(in *pbServer.FilmsRequest, stream pbServer.CinemaBackend_
 }
 
 func (s *server) FilmRoom(ctx context.Context, in *pbServer.FilmRoomRequest) (*pbServer.FilmRoomResponse, error) {
+	ctx, span := trace.StartSpan(ctx, "grpc/server/FilmRoom")
+	defer span.End()
+
 	film64 := in.GetFilmId()
 	filmId := uint(film64)
 
@@ -108,6 +119,9 @@ func (s *server) FilmRoom(ctx context.Context, in *pbServer.FilmRoomRequest) (*p
 }
 
 func (s *server) TicketCreate(ctx context.Context, in *pbServer.TicketCreateRequest) (*pbServer.TicketCreateResponse, error) {
+	ctx, span := trace.StartSpan(ctx, "grpc/server/TicketCreate")
+	defer span.End()
+
 	film64 := in.GetFilmId()
 	place64 := in.GetPlaceId()
 
@@ -131,6 +145,9 @@ func (s *server) TicketCreate(ctx context.Context, in *pbServer.TicketCreateRequ
 }
 
 func (s *server) TicketDelete(ctx context.Context, in *pbServer.TicketDeleteRequest) (*pbServer.TicketDeleteResponse, error) {
+	ctx, span := trace.StartSpan(ctx, "grpc/server/TicketDelete")
+	defer span.End()
+
 	ticket64 := in.GetTicketId()
 	ticketId := uint(ticket64)
 
@@ -144,6 +161,9 @@ func (s *server) TicketDelete(ctx context.Context, in *pbServer.TicketDeleteRequ
 }
 
 func (s *server) MyTickets(ctx context.Context, _ *pbServer.MyTicketsRequest) (*pbServer.MyTicketsResponse, error) {
+	ctx, span := trace.StartSpan(ctx, "grpc/server/MyTickets")
+	defer span.End()
+
 	tickets, err := s.CinemaRepository.GetMyTickets(ctx, getCurrentUserId(ctx))
 	if err != nil {
 		s.Logger.Errorf("my tickets %v", err)

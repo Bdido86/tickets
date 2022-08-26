@@ -9,5 +9,5 @@ import (
 type Broker interface {
 	CreateTicket(ctx context.Context, filmId, placeId uint) error
 	DeleteTicket(ctx context.Context, ticketId uint) error
-	Close(ctx context.Context) error
+	Close() error
 }

@@ -42,7 +42,7 @@ func main() {
 	runRest(ctx, logger, clientPort, clientGRPCPort, c.RequestTimeOutInMilliSecond())
 }
 
-func runRestGrpc(ctx context.Context, logger logger.Logger, clientGRPCPort string, serverPort string) {
+func runRestGrpc(_ context.Context, logger logger.Logger, clientGRPCPort string, serverPort string) {
 	listener, err := net.Listen("tcp", clientGRPCPort)
 	if err != nil {
 		logger.Fatalf("Error clientGRPCPort connect tcp: %v", err)
@@ -57,7 +57,7 @@ func runRestGrpc(ctx context.Context, logger logger.Logger, clientGRPCPort strin
 
 	broker := kafka.NewBroker(logger)
 	defer func() {
-		broker.Close(ctx)
+		broker.Close()
 	}()
 
 	server := pbApiServer.NewCinemaBackendClient(serverConn)
@@ -78,9 +78,6 @@ func runRestGrpc(ctx context.Context, logger logger.Logger, clientGRPCPort strin
 }
 
 func runRest(ctx context.Context, logger logger.Logger, clientPort string, clientGRPCPort string, requestTimeoutInMilliSecond time.Duration) {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	runtime.DefaultContextTimeout = requestTimeoutInMilliSecond
 	rmux := runtime.NewServeMux(
 		runtime.WithIncomingHeaderMatcher(headerMatcherREST),

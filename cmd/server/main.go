@@ -2,13 +2,15 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/jackc/pgx/v4/pgxpool"
 	apiGrpcServer "gitlab.ozon.dev/Bdido86/movie-tickets/internal/api/grpc/server"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/config"
-	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/logger"
+	log "gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/logger"
 	postgres "gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/repository/postgres"
 	pbApiServer "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/server"
+	"go.opencensus.io/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -23,13 +25,14 @@ const (
 )
 
 var depsRepo apiGrpcServer.Deps
+var logger log.Logger
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	c := config.GetConfig()
-	logger := logger.GetLogger(c.DebugLevel())
+	logger = log.GetLogger(c.DebugLevel())
 
 	serverAddress := ":" + c.ServerPort()
 
@@ -59,7 +62,10 @@ func main() {
 		CinemaRepository: postgres.NewRepository(pool, logger),
 	}
 
-	option := grpc.UnaryInterceptor(AuthInterceptor)
+	option := grpc.ChainUnaryInterceptor(
+		xSpanInterceptor,
+		authInterceptor,
+	)
 	grpcServer := grpc.NewServer(option)
 	pbApiServer.RegisterCinemaBackendServer(grpcServer, apiGrpcServer.NewServer(depsRepo))
 
@@ -69,7 +75,7 @@ func main() {
 	}
 }
 
-func AuthInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+func authInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	if isAuthPath(info.FullMethod) {
 		return handler(ctx, req)
 	}
@@ -95,6 +101,31 @@ func AuthInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServe
 	}
 
 	return nil, status.Error(codes.PermissionDenied, "Header [Token] is invalid. See 'auth' method")
+}
+
+func xSpanInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	metaData, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return handler(ctx, req)
+	}
+
+	spanContextJson := metaData.Get("X-Span-Context")
+	if len(spanContextJson) == 0 {
+		logger.Warning("Empty X-Span-Context in header")
+		return handler(ctx, req)
+	}
+
+	var spanContext trace.SpanContext
+	err := json.Unmarshal([]byte(spanContextJson[0]), &spanContext)
+	if err != nil {
+		logger.Errorf("error  Unmarshal %v", err)
+		return handler(ctx, req)
+	}
+
+	ctx, span := trace.StartSpanWithRemoteParent(ctx, "gRPC server XSpanInterceptor", spanContext)
+	defer span.End()
+
+	return handler(ctx, req)
 }
 
 func isAuthPath(fullMethod string) bool {

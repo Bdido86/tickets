@@ -2,10 +2,12 @@ package grpc
 
 import (
 	"context"
+	"encoding/json"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/broker"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/logger"
 	pbClient "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/client"
 	pbServer "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/server"
+	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -31,6 +33,11 @@ func NewServer(d Deps) *server {
 }
 
 func (s *server) UserAuth(ctx context.Context, in *pbClient.UserAuthRequest) (*pbClient.UserAuthResponse, error) {
+	ctx, span := trace.StartSpan(ctx, "grpc/client/UserAuth")
+	defer span.End()
+
+	ctx = appendSpan(ctx, span)
+
 	userName := strings.Trim(in.GetName(), " ")
 	if len(userName) == 0 {
 		s.Logger.Info("field: [name] is required")
@@ -56,6 +63,13 @@ func (s *server) UserAuth(ctx context.Context, in *pbClient.UserAuthRequest) (*p
 }
 
 func (s *server) Films(in *pbClient.FilmsRequest, stream pbClient.CinemaFrontend_FilmsServer) error {
+	ctx := stream.Context()
+
+	ctx, span := trace.StartSpan(ctx, "grpc/client/Films")
+	defer span.End()
+
+	ctx = appendSpan(ctx, span)
+
 	limit64 := in.GetLimit()
 	offset64 := in.GetOffset()
 	if limit64 > 100 {
@@ -72,8 +86,7 @@ func (s *server) Films(in *pbClient.FilmsRequest, stream pbClient.CinemaFrontend
 		Offset: in.Offset,
 		Desc:   in.Desc,
 	}
-	ctx := stream.Context()
-	ctx = prepareContext(ctx)
+
 	serverStreamFilm, err := s.Server.Films(ctx, inServer)
 	if err != nil {
 		s.Logger.Errorf("cannot get films stream %v", err)
@@ -110,6 +123,11 @@ func (s *server) Films(in *pbClient.FilmsRequest, stream pbClient.CinemaFrontend
 }
 
 func (s *server) FilmRoom(ctx context.Context, in *pbClient.FilmRoomRequest) (*pbClient.FilmRoomResponse, error) {
+	ctx, span := trace.StartSpan(ctx, "grpc/client/FilmRoom")
+	defer span.End()
+
+	ctx = appendSpan(ctx, span)
+
 	film64 := in.GetFilmId()
 	if film64 == 0 {
 		s.Logger.Info("Field: [filmId] is required and > 0")
@@ -123,7 +141,7 @@ func (s *server) FilmRoom(ctx context.Context, in *pbClient.FilmRoomRequest) (*p
 	inServer := &pbServer.FilmRoomRequest{
 		FilmId: in.FilmId,
 	}
-	ctx = prepareContext(ctx)
+
 	serverFilmRoomResponse, err := s.Server.FilmRoom(ctx, inServer)
 	if err != nil {
 		s.Logger.Errorf("server film %v", err)
@@ -154,6 +172,11 @@ func (s *server) FilmRoom(ctx context.Context, in *pbClient.FilmRoomRequest) (*p
 }
 
 func (s *server) TicketCreate(ctx context.Context, in *pbClient.TicketCreateRequest) (*pbClient.TicketCreateResponse, error) {
+	ctx, span := trace.StartSpan(ctx, "grpc/client/TicketCreate")
+	defer span.End()
+
+	ctx = appendSpan(ctx, span)
+
 	film64 := in.GetFilmId()
 	place64 := in.GetPlaceId()
 	if film64 == 0 {
@@ -177,7 +200,7 @@ func (s *server) TicketCreate(ctx context.Context, in *pbClient.TicketCreateRequ
 		FilmId:  in.FilmId,
 		PlaceId: in.PlaceId,
 	}
-	ctx = prepareContext(ctx)
+
 	serverTicketCreateResponse, err := s.Server.TicketCreate(ctx, inServer)
 	if err != nil {
 		s.Logger.Errorf("server ticket create %v", err)
@@ -195,6 +218,11 @@ func (s *server) TicketCreate(ctx context.Context, in *pbClient.TicketCreateRequ
 }
 
 func (s *server) TicketDelete(ctx context.Context, in *pbClient.TicketDeleteRequest) (*pbClient.TicketDeleteResponse, error) {
+	ctx, span := trace.StartSpan(ctx, "grpc/client/TicketDelete")
+	defer span.End()
+
+	ctx = appendSpan(ctx, span)
+
 	ticket64 := in.GetTicketId()
 	if ticket64 == 0 {
 		s.Logger.Info("Field: [ticketId] is required and > 0")
@@ -208,7 +236,7 @@ func (s *server) TicketDelete(ctx context.Context, in *pbClient.TicketDeleteRequ
 	inServer := &pbServer.TicketDeleteRequest{
 		TicketId: in.TicketId,
 	}
-	ctx = prepareContext(ctx)
+
 	_, err := s.Server.TicketDelete(ctx, inServer)
 	if err != nil {
 		s.Logger.Errorf("server ticket delete %v", err)
@@ -219,8 +247,12 @@ func (s *server) TicketDelete(ctx context.Context, in *pbClient.TicketDeleteRequ
 }
 
 func (s *server) MyTickets(ctx context.Context, _ *pbClient.MyTicketsRequest) (*pbClient.MyTicketsResponse, error) {
+	ctx, span := trace.StartSpan(ctx, "grpc/client/MyTickets")
+	defer span.End()
+
+	ctx = appendSpan(ctx, span)
+
 	inServer := &pbServer.MyTicketsRequest{}
-	ctx = prepareContext(ctx)
 	serverMyTicketsResponse, err := s.Server.MyTickets(ctx, inServer)
 	if err != nil {
 		s.Logger.Errorf("server my tickets %v", err)
@@ -242,6 +274,11 @@ func (s *server) MyTickets(ctx context.Context, _ *pbClient.MyTicketsRequest) (*
 }
 
 func (s *server) TicketDeleteAsync(ctx context.Context, in *pbClient.TicketDeleteRequestAsync) (*pbClient.TicketDeleteResponseAsync, error) {
+	ctx, span := trace.StartSpan(ctx, "grpc/client/TicketDeleteAsync")
+	defer span.End()
+
+	ctx = appendSpan(ctx, span)
+
 	ticket64 := in.GetTicketId()
 	if ticket64 == 0 {
 		s.Logger.Info("Field: [ticketId] is required and > 0")
@@ -252,7 +289,6 @@ func (s *server) TicketDeleteAsync(ctx context.Context, in *pbClient.TicketDelet
 		return nil, status.Error(codes.InvalidArgument, "Field: [ticketId] is too big. Maximum 500")
 	}
 
-	ctx = prepareContext(ctx)
 	err := s.Broker.DeleteTicket(ctx, uint(ticket64))
 	if err != nil {
 		s.Logger.Errorf("broker ticket delete %v", err)
@@ -263,6 +299,11 @@ func (s *server) TicketDeleteAsync(ctx context.Context, in *pbClient.TicketDelet
 }
 
 func (s *server) TicketCreateAsync(ctx context.Context, in *pbClient.TicketCreateRequestAsync) (*pbClient.TicketCreateResponseAsync, error) {
+	ctx, span := trace.StartSpan(ctx, "grpc/client/TicketCreateAsync")
+	defer span.End()
+
+	ctx = appendSpan(ctx, span)
+
 	film64 := in.GetFilmId()
 	place64 := in.GetPlaceId()
 	if film64 == 0 {
@@ -282,7 +323,6 @@ func (s *server) TicketCreateAsync(ctx context.Context, in *pbClient.TicketCreat
 		return nil, status.Error(codes.InvalidArgument, "Field: [placeId] is too big. Maximum 50")
 	}
 
-	ctx = prepareContext(ctx)
 	err := s.Broker.CreateTicket(ctx, uint(film64), uint(place64))
 	if err != nil {
 		s.Logger.Errorf("broker ticket create %v", err)
@@ -292,7 +332,11 @@ func (s *server) TicketCreateAsync(ctx context.Context, in *pbClient.TicketCreat
 	return &pbClient.TicketCreateResponseAsync{}, nil
 }
 
-func prepareContext(ctx context.Context) context.Context {
+func appendSpan(ctx context.Context, span *trace.Span) context.Context {
+	spanContextJson, _ := json.Marshal(span.SpanContext())
+
 	metaData, _ := metadata.FromIncomingContext(ctx)
+	metaData.Set("X-Span-Context", string(spanContextJson))
+
 	return metadata.NewOutgoingContext(ctx, metaData)
 }

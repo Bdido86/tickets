@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/models"
 	pbApiServer "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/server"
+	"go.opencensus.io/trace"
 )
 
 type Film interface {
@@ -15,6 +16,9 @@ type Film interface {
 }
 
 func (r *Repository) GetFilms(ctx context.Context, limit uint64, offset uint64, desc bool, streamFunc func(film *pbApiServer.Film) error) error {
+	ctx, span := trace.StartSpan(ctx, "repository/GetFilms")
+	defer span.End()
+
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -65,6 +69,9 @@ func (r *Repository) GetFilms(ctx context.Context, limit uint64, offset uint64, 
 }
 
 func (r *Repository) GetFilmRoom(ctx context.Context, filmId uint, currentUserId uint) (models.FilmRoom, error) {
+	ctx, span := trace.StartSpan(ctx, "repository/GetFilmRoom")
+	defer span.End()
+
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
