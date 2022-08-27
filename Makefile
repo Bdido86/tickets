@@ -1,9 +1,9 @@
 #!make
 include .env
 
-.PHONY: run-bot run-server run-client
-run-bot:
-	go run cmd/bot/main.go
+.PHONY: run-consumer run-server run-client
+run-consumer:
+	go run cmd/consumer/main.go
 run-server:
 	go run cmd/server/main.go
 run-client:
@@ -56,7 +56,6 @@ migrate-status:
 .test-integration:
 	$(info Running tests integration ...)
 	go test -tags=integration ./tests -v
-
 
 .PHONY: .generate-fixture
 FILE_GENERATOR_FIXTURE = $(if $(filename),$(filename),"./third_party/generators/fixture/test/structures.go")

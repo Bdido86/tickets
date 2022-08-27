@@ -26,7 +26,9 @@ type CinemaFrontendClient interface {
 	Films(ctx context.Context, in *FilmsRequest, opts ...grpc.CallOption) (CinemaFrontend_FilmsClient, error)
 	FilmRoom(ctx context.Context, in *FilmRoomRequest, opts ...grpc.CallOption) (*FilmRoomResponse, error)
 	TicketCreate(ctx context.Context, in *TicketCreateRequest, opts ...grpc.CallOption) (*TicketCreateResponse, error)
+	TicketCreateAsync(ctx context.Context, in *TicketCreateRequestAsync, opts ...grpc.CallOption) (*TicketCreateResponseAsync, error)
 	TicketDelete(ctx context.Context, in *TicketDeleteRequest, opts ...grpc.CallOption) (*TicketDeleteResponse, error)
+	TicketDeleteAsync(ctx context.Context, in *TicketDeleteRequestAsync, opts ...grpc.CallOption) (*TicketDeleteResponseAsync, error)
 	MyTickets(ctx context.Context, in *MyTicketsRequest, opts ...grpc.CallOption) (*MyTicketsResponse, error)
 }
 
@@ -97,9 +99,27 @@ func (c *cinemaFrontendClient) TicketCreate(ctx context.Context, in *TicketCreat
 	return out, nil
 }
 
+func (c *cinemaFrontendClient) TicketCreateAsync(ctx context.Context, in *TicketCreateRequestAsync, opts ...grpc.CallOption) (*TicketCreateResponseAsync, error) {
+	out := new(TicketCreateResponseAsync)
+	err := c.cc.Invoke(ctx, "/api_client.CinemaFrontend/TicketCreateAsync", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *cinemaFrontendClient) TicketDelete(ctx context.Context, in *TicketDeleteRequest, opts ...grpc.CallOption) (*TicketDeleteResponse, error) {
 	out := new(TicketDeleteResponse)
 	err := c.cc.Invoke(ctx, "/api_client.CinemaFrontend/TicketDelete", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cinemaFrontendClient) TicketDeleteAsync(ctx context.Context, in *TicketDeleteRequestAsync, opts ...grpc.CallOption) (*TicketDeleteResponseAsync, error) {
+	out := new(TicketDeleteResponseAsync)
+	err := c.cc.Invoke(ctx, "/api_client.CinemaFrontend/TicketDeleteAsync", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +143,9 @@ type CinemaFrontendServer interface {
 	Films(*FilmsRequest, CinemaFrontend_FilmsServer) error
 	FilmRoom(context.Context, *FilmRoomRequest) (*FilmRoomResponse, error)
 	TicketCreate(context.Context, *TicketCreateRequest) (*TicketCreateResponse, error)
+	TicketCreateAsync(context.Context, *TicketCreateRequestAsync) (*TicketCreateResponseAsync, error)
 	TicketDelete(context.Context, *TicketDeleteRequest) (*TicketDeleteResponse, error)
+	TicketDeleteAsync(context.Context, *TicketDeleteRequestAsync) (*TicketDeleteResponseAsync, error)
 	MyTickets(context.Context, *MyTicketsRequest) (*MyTicketsResponse, error)
 	mustEmbedUnimplementedCinemaFrontendServer()
 }
@@ -144,8 +166,14 @@ func (UnimplementedCinemaFrontendServer) FilmRoom(context.Context, *FilmRoomRequ
 func (UnimplementedCinemaFrontendServer) TicketCreate(context.Context, *TicketCreateRequest) (*TicketCreateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TicketCreate not implemented")
 }
+func (UnimplementedCinemaFrontendServer) TicketCreateAsync(context.Context, *TicketCreateRequestAsync) (*TicketCreateResponseAsync, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TicketCreateAsync not implemented")
+}
 func (UnimplementedCinemaFrontendServer) TicketDelete(context.Context, *TicketDeleteRequest) (*TicketDeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TicketDelete not implemented")
+}
+func (UnimplementedCinemaFrontendServer) TicketDeleteAsync(context.Context, *TicketDeleteRequestAsync) (*TicketDeleteResponseAsync, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TicketDeleteAsync not implemented")
 }
 func (UnimplementedCinemaFrontendServer) MyTickets(context.Context, *MyTicketsRequest) (*MyTicketsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MyTickets not implemented")
@@ -238,6 +266,24 @@ func _CinemaFrontend_TicketCreate_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CinemaFrontend_TicketCreateAsync_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TicketCreateRequestAsync)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CinemaFrontendServer).TicketCreateAsync(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api_client.CinemaFrontend/TicketCreateAsync",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CinemaFrontendServer).TicketCreateAsync(ctx, req.(*TicketCreateRequestAsync))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _CinemaFrontend_TicketDelete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(TicketDeleteRequest)
 	if err := dec(in); err != nil {
@@ -252,6 +298,24 @@ func _CinemaFrontend_TicketDelete_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CinemaFrontendServer).TicketDelete(ctx, req.(*TicketDeleteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CinemaFrontend_TicketDeleteAsync_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TicketDeleteRequestAsync)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CinemaFrontendServer).TicketDeleteAsync(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api_client.CinemaFrontend/TicketDeleteAsync",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CinemaFrontendServer).TicketDeleteAsync(ctx, req.(*TicketDeleteRequestAsync))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -294,8 +358,16 @@ var CinemaFrontend_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _CinemaFrontend_TicketCreate_Handler,
 		},
 		{
+			MethodName: "TicketCreateAsync",
+			Handler:    _CinemaFrontend_TicketCreateAsync_Handler,
+		},
+		{
 			MethodName: "TicketDelete",
 			Handler:    _CinemaFrontend_TicketDelete_Handler,
+		},
+		{
+			MethodName: "TicketDeleteAsync",
+			Handler:    _CinemaFrontend_TicketDeleteAsync_Handler,
 		},
 		{
 			MethodName: "MyTickets",

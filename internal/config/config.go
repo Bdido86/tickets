@@ -13,7 +13,7 @@ const (
 	serverPort                  = "SERVER_PORT"
 	clientPort                  = "CLIENT_PORT"
 	clientGrpcPort              = "CLIENT_GRPC_PORT"
-	debug                       = "DEBUG"
+	debugLevel                  = "DEBUG_LEVEL"
 	requestTimeOutInMilliSecond = "REQUEST_TIMEOUT_IN_MILLISECOND"
 
 	dbHost     = "DB_HOST"
@@ -30,7 +30,7 @@ type Config struct {
 	serverPort                  string
 	clientPort                  string
 	clientGrpcPort              string
-	debug                       bool
+	debugLevel                  string
 	requestTimeOutInMilliSecond time.Duration
 
 	dbHost     string
@@ -56,8 +56,8 @@ func (c Config) ClientGrpcPort() string {
 	return c.clientGrpcPort
 }
 
-func (c Config) Debug() bool {
-	return c.debug
+func (c Config) DebugLevel() string {
+	return c.debugLevel
 }
 
 func (c Config) RequestTimeOutInMilliSecond() time.Duration {
@@ -112,7 +112,7 @@ func new() *Config {
 		dbPassword: getEnv(dbPassword, ""),
 		dbName:     getEnv(dbName, ""),
 
-		debug:                       getEnvAsBool(debug, false),
+		debugLevel:                  getEnv(debugLevel, "info"),
 		requestTimeOutInMilliSecond: time.Duration(requestTimeOutInMilliSecond) * time.Millisecond,
 	}
 }
@@ -120,15 +120,6 @@ func new() *Config {
 func getEnv(key string, defaultVal string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value
-	}
-
-	return defaultVal
-}
-
-func getEnvAsBool(name string, defaultVal bool) bool {
-	valStr := getEnv(name, "")
-	if val, err := strconv.ParseBool(valStr); err == nil {
-		return val
 	}
 
 	return defaultVal

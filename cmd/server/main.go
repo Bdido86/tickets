@@ -2,17 +2,19 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/jackc/pgx/v4/pgxpool"
 	apiGrpcServer "gitlab.ozon.dev/Bdido86/movie-tickets/internal/api/grpc/server"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/config"
+	log "gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/logger"
 	postgres "gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/repository/postgres"
 	pbApiServer "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/server"
+	"go.opencensus.io/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"log"
 	"net"
 	"strings"
 )
@@ -23,12 +25,14 @@ const (
 )
 
 var depsRepo apiGrpcServer.Deps
+var logger log.Logger
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	c := config.GetConfig()
+	logger = log.GetLogger(c.DebugLevel())
 
 	serverAddress := ":" + c.ServerPort()
 
@@ -39,33 +43,39 @@ func main() {
 
 	pool, err := pgxpool.Connect(ctx, psqlConn)
 	if err != nil {
-		log.Fatalf("Can't connect to database: %v", err)
+		logger.Fatalf("Can't connect to database: %v", err)
 	}
 	defer pool.Close()
 
 	if err := pool.Ping(ctx); err != nil {
-		log.Fatalf("Ping database error: %v", err)
+		logger.Fatalf("Ping database error: %v", err)
 	}
 
 	listener, err := net.Listen("tcp", serverAddress)
 	if err != nil {
-		log.Fatalf("Error GRPCServer connect tcp: %v", err)
+		logger.Fatalf("Error GRPCServer connect tcp: %v", err)
 	}
 	defer listener.Close()
 
-	depsRepo = apiGrpcServer.Deps{CinemaRepository: postgres.NewRepository(pool)}
+	depsRepo = apiGrpcServer.Deps{
+		Logger:           logger,
+		CinemaRepository: postgres.NewRepository(pool, logger),
+	}
 
-	option := grpc.UnaryInterceptor(AuthInterceptor)
+	option := grpc.ChainUnaryInterceptor(
+		xSpanInterceptor,
+		authInterceptor,
+	)
 	grpcServer := grpc.NewServer(option)
 	pbApiServer.RegisterCinemaBackendServer(grpcServer, apiGrpcServer.NewServer(depsRepo))
 
-	log.Println("Serving SERVER GRPC on " + serverAddress)
+	logger.Infof("Serving SERVER GRPC on %s", serverAddress)
 	if err = grpcServer.Serve(listener); err != nil {
-		log.Fatalf("Error GRPCServer listen: %v", err)
+		logger.Fatalf("Error GRPCServer listen: %v", err)
 	}
 }
 
-func AuthInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+func authInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	if isAuthPath(info.FullMethod) {
 		return handler(ctx, req)
 	}
@@ -91,6 +101,31 @@ func AuthInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServe
 	}
 
 	return nil, status.Error(codes.PermissionDenied, "Header [Token] is invalid. See 'auth' method")
+}
+
+func xSpanInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	metaData, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return handler(ctx, req)
+	}
+
+	spanContextJson := metaData.Get("X-Span-Context")
+	if len(spanContextJson) == 0 {
+		logger.Warning("Empty X-Span-Context in header")
+		return handler(ctx, req)
+	}
+
+	var spanContext trace.SpanContext
+	err := json.Unmarshal([]byte(spanContextJson[0]), &spanContext)
+	if err != nil {
+		logger.Errorf("error  Unmarshal %v", err)
+		return handler(ctx, req)
+	}
+
+	ctx, span := trace.StartSpanWithRemoteParent(ctx, "gRPC server XSpanInterceptor", spanContext)
+	defer span.End()
+
+	return handler(ctx, req)
 }
 
 func isAuthPath(fullMethod string) bool {

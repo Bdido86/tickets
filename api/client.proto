@@ -110,6 +110,23 @@ service CinemaFrontend {
     };
   };
 
+  rpc TicketCreateAsync (TicketCreateRequestAsync) returns (TicketCreateResponseAsync) {
+    option (google.api.http) = {
+      post: "/v1/films/{film_id}/room/{place_id}/async"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Покупка билета в кино(фильм, зал, место) через очередь сообщений(broker)";
+      operation_id: "createTicketAsync";
+      tags: "ticket";
+      security: {
+        security_requirement: {
+          key: "Bearer";
+          value: {}
+        }
+      }
+    };
+  };
+
   rpc TicketDelete (TicketDeleteRequest) returns (TicketDeleteResponse) {
     option (google.api.http) = {
       delete: "/v1/ticket/{ticket_id}"
@@ -117,6 +134,23 @@ service CinemaFrontend {
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Удаление билет";
       operation_id: "deleteTicket";
+      tags: "ticket";
+      security: {
+        security_requirement: {
+          key: "Bearer";
+          value: {}
+        }
+      }
+    };
+  };
+
+  rpc TicketDeleteAsync (TicketDeleteRequestAsync) returns (TicketDeleteResponseAsync) {
+    option (google.api.http) = {
+      delete: "/v1/ticket/{ticket_id}/async"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Удаление билета через очередь сообщений(broker)";
+      operation_id: "deleteTicketAsync";
       tags: "ticket";
       security: {
         security_requirement: {
@@ -327,3 +361,37 @@ message MyTicketsResponse {
     description: "Список моих билетов",
   }];
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// TicketCreateAsync endpoint messages
+// ---------------------------------------------------------------------------------------------------------------------
+
+message TicketCreateRequestAsync {
+  uint64 film_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    title: "ID записи",
+    description: "Фильм на который покупается билет",
+    format: "integer"
+    example: "4"
+  }];
+  uint64 place_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    title: "ID записи",
+    description: "Место в кинотеатре",
+    format: "integer"
+    example: "8"
+  }];
+}
+message TicketCreateResponseAsync {}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// TicketDeleteAsync endpoint messages
+// ---------------------------------------------------------------------------------------------------------------------
+
+message TicketDeleteRequestAsync {
+  uint64 ticket_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    title: "ID записи",
+    description: "Билет который будет удален",
+    format: "integer"
+    example: "10"
+  }];
+}
+message TicketDeleteResponseAsync {}
