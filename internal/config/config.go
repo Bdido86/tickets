@@ -21,6 +21,8 @@ const (
 	dbUser     = "DB_USER"
 	dbPassword = "DB_PASSWORD"
 	dbName     = "DB_NAME"
+
+	redisPort = "REDIS_PORT"
 )
 
 var singleInstance *Config
@@ -38,6 +40,8 @@ type Config struct {
 	dbUser     string
 	dbPassword string
 	dbName     string
+
+	redisPort string
 }
 
 func (c Config) Token() string {
@@ -84,6 +88,10 @@ func (c Config) DbName() string {
 	return c.dbName
 }
 
+func (c Config) RedisPort() string {
+	return c.redisPort
+}
+
 func init() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("No .env file found")
@@ -111,6 +119,8 @@ func new() *Config {
 		dbUser:     getEnv(dbUser, ""),
 		dbPassword: getEnv(dbPassword, ""),
 		dbName:     getEnv(dbName, ""),
+
+		redisPort: getEnv(redisPort, ""),
 
 		debugLevel:                  getEnv(debugLevel, "info"),
 		requestTimeOutInMilliSecond: time.Duration(requestTimeOutInMilliSecond) * time.Millisecond,
@@ -158,5 +168,8 @@ func validateConfig() {
 	}
 	if len(c.DbName()) == 0 {
 		log.Fatal("Config error: db name is empty")
+	}
+	if len(c.RedisPort()) == 0 {
+		log.Fatal("Config error: redis port is empty")
 	}
 }

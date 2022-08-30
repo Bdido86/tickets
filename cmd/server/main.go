@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	apiGrpcServer "gitlab.ozon.dev/Bdido86/movie-tickets/internal/api/grpc/server"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/config"
+	cache "gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/cache/redis"
 	log "gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/logger"
 	postgres "gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/repository/postgres"
 	pbApiServer "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/server"
@@ -57,9 +58,10 @@ func main() {
 	}
 	defer listener.Close()
 
+	cache := cache.NewCache(c.RedisPort(), logger)
 	depsRepo = apiGrpcServer.Deps{
 		Logger:           logger,
-		CinemaRepository: postgres.NewRepository(pool, logger),
+		CinemaRepository: postgres.NewRepository(pool, logger, cache),
 	}
 
 	option := grpc.ChainUnaryInterceptor(
