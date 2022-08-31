@@ -132,6 +132,54 @@ func (r *Redis) ResetUserTickets(ctx context.Context, userId uint) bool {
 	return true
 }
 
+func (r *Redis) SetUserIdByToken(ctx context.Context, userId uint, token string) bool {
+	ctx, span := trace.StartSpan(ctx, "cache/redis/SetUserIdByToken")
+	defer span.End()
+
+	r.logger.Infof("set cache SetUserIdByToken")
+
+	res := r.client.Set(token, strconv.FormatUint(uint64(userId), 10), 1*time.Hour)
+
+	if res.Err() != nil {
+		r.logger.Errorf("cache SetUserIdByToken %v", res.Err())
+		return false
+	}
+
+	return true
+}
+
+func (r *Redis) GetUserIdByToken(ctx context.Context, token string) (uint, error) {
+	ctx, span := trace.StartSpan(ctx, "cache/redis/GetUserIdByToken")
+	defer span.End()
+
+	r.logger.Infof("cache GetUserIdByToken %s", token)
+
+	key := "userByToken"
+	res := r.client.Get(token)
+	if res.Err() != nil {
+		r.addMiss(key)
+
+		r.logger.Errorf("cache GetUserIdByToken %v", res.Err())
+		return 0, res.Err()
+	}
+
+	cacheResult, err := res.Result()
+	if err != nil {
+		r.logger.Errorf("cache GetUserIdByToken cacheResult %v", res)
+		return 0, res.Err()
+	}
+
+	userId, err := strconv.ParseUint(cacheResult, 10, 32)
+	if err != nil {
+		r.logger.Errorf("cache GetUserIdByToken ParseUint %v - %v", res, cacheResult)
+		return 0, res.Err()
+	}
+
+	r.addHit(key)
+
+	return uint(userId), nil
+}
+
 func getKeyUserTickets(userId uint) string {
 	return "ticket-userId-" + strconv.FormatUint(uint64(userId), 10)
 }

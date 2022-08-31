@@ -114,7 +114,7 @@ func getSpanContextFromHeaders(msg *sarama.ConsumerMessage) (trace.SpanContext, 
 	var spanContext trace.SpanContext
 	for _, header := range msg.Headers {
 		if string(header.Key) == "X-Span-Context" && len(header.Key) > 0 {
-			err := json.Unmarshal(header.Key, &spanContext)
+			err := json.Unmarshal(header.Value, &spanContext)
 			return spanContext, err
 		}
 	}

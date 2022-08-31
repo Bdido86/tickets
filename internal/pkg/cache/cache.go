@@ -7,5 +7,9 @@ type Cache interface {
 	GetUserTickets(ctx context.Context, userId uint) ([]models.Ticket, error)
 	SetUserTickets(ctx context.Context, userId uint, tickets []models.Ticket) bool
 	ResetUserTickets(ctx context.Context, userId uint) bool
+
+	GetUserIdByToken(ctx context.Context, token string) (uint, error)
+	SetUserIdByToken(ctx context.Context, userId uint, token string) bool
+
 	CounterInfo()
 }
