@@ -60,6 +60,12 @@ func (r *Repository) GetUserIdByToken(ctx context.Context, token string) (uint, 
 	defer r.mu.Unlock()
 
 	var userId uint
+
+	userId, err := r.cache.GetUserIdByToken(ctx, token)
+	if err == nil {
+		return userId, nil
+	}
+
 	query, args, err := squirrel.Select("id").
 		From("users").
 		Where(
@@ -79,6 +85,8 @@ func (r *Repository) GetUserIdByToken(ctx context.Context, token string) (uint, 
 		r.logger.Errorf("Repository.GetUserIdByToken.Get %v", err)
 		return userId, errors.Wrap(err, "Repository.GetUserIdByToken.Get")
 	}
+
+	r.cache.SetUserIdByToken(ctx, userId, token)
 
 	return userId, nil
 }

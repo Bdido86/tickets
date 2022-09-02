@@ -6,6 +6,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/config"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/broker/kafka"
+	cache "gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/cache/redis"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/logger"
 	postgres "gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/repository/postgres"
 	"net/http"
@@ -34,9 +35,10 @@ func main() {
 		http.ListenAndServe("localhost:8020", nil)
 	}()
 
+	cache := cache.NewCache(c.RedisPort(), logger)
 	deps := kafka.Deps{
 		Logger:           logger,
-		CinemaRepository: postgres.NewRepository(pool, logger),
+		CinemaRepository: postgres.NewRepository(pool, logger, cache),
 	}
 	consumer := kafka.NewConsumer(deps)
 	consumer.Run(ctx)

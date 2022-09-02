@@ -23,6 +23,12 @@ func (r *Repository) GetMyTickets(ctx context.Context, currentUserId uint) ([]mo
 	defer r.mu.RUnlock()
 
 	var tickets []models.Ticket
+
+	tickets, err := r.cache.GetUserTickets(ctx, currentUserId)
+	if err == nil {
+		return tickets, nil
+	}
+
 	query, args, err := squirrel.Select("*").
 		From("tickets").
 		Where(
@@ -37,6 +43,8 @@ func (r *Repository) GetMyTickets(ctx context.Context, currentUserId uint) ([]mo
 		r.logger.Errorf("Repository.GetMyTickets.Select %v", err)
 		return tickets, errors.Wrap(err, "Repository.GetMyTickets.Select: error scan")
 	}
+
+	r.cache.SetUserTickets(ctx, currentUserId, tickets)
 
 	return tickets, nil
 }
@@ -82,6 +90,8 @@ func (r *Repository) DeleteTicket(ctx context.Context, ticketId uint, currentUse
 		r.logger.Errorf("Repository.DeleteTicket.Delete %v", err)
 		return errors.Wrap(err, "Repository.DeleteTicket.Delete")
 	}
+
+	r.cache.ResetUserTickets(ctx, currentUserId)
 
 	return nil
 }
@@ -166,6 +176,9 @@ func (r *Repository) CreateTicket(ctx context.Context, filmId uint, placeId uint
 			r.logger.Errorf("Repository.CreateTicket.Insert %v", err)
 			return ticket, errors.Wrap(err, "Repository.CreateTicket.Insert")
 		}
+
+		r.cache.ResetUserTickets(ctx, currentUserId)
+
 		return ticket, nil
 	}
 

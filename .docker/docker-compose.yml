@@ -145,3 +145,14 @@ services:
       - zookeeper
     networks:
       - somenet
+
+  redis:
+    image: redis
+    container_name: 'redis'
+    ports:
+      - ${REDIS_PORT}:6379
+    restart: always
+    depends_on:
+      - postgres
+    networks:
+      - somenet
