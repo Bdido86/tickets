@@ -22,7 +22,9 @@ const (
 	dbPassword = "DB_PASSWORD"
 	dbName     = "DB_NAME"
 
-	redisPort = "REDIS_PORT"
+	redisAddr     = "REDIS_ADDR"
+	redisPassword = "REDIS_PASSWORD"
+	redisDb       = "REDIS_DB"
 )
 
 var singleInstance *Config
@@ -41,7 +43,9 @@ type Config struct {
 	dbPassword string
 	dbName     string
 
-	redisPort string
+	redisAddr     string
+	redisPassword string
+	redisDb       int
 }
 
 func (c Config) Token() string {
@@ -88,8 +92,16 @@ func (c Config) DbName() string {
 	return c.dbName
 }
 
-func (c Config) RedisPort() string {
-	return c.redisPort
+func (c Config) RedisAddr() string {
+	return c.redisAddr
+}
+
+func (c Config) RedisPassword() string {
+	return c.redisPassword
+}
+
+func (c Config) RedisDb() int {
+	return c.redisDb
 }
 
 func init() {
@@ -120,7 +132,9 @@ func new() *Config {
 		dbPassword: getEnv(dbPassword, ""),
 		dbName:     getEnv(dbName, ""),
 
-		redisPort: getEnv(redisPort, ""),
+		redisAddr:     getEnv(redisAddr, ""),
+		redisPassword: getEnv(redisPassword, ""),
+		redisDb:       getEnvAsInt(redisDb, 0),
 
 		debugLevel:                  getEnv(debugLevel, "info"),
 		requestTimeOutInMilliSecond: time.Duration(requestTimeOutInMilliSecond) * time.Millisecond,
@@ -133,6 +147,14 @@ func getEnv(key string, defaultVal string) string {
 	}
 
 	return defaultVal
+}
+
+func getEnvAsInt(name string, defaultValue int) int {
+	value := getEnv(name, "")
+	if valueInt, err := strconv.Atoi(value); err == nil {
+		return valueInt
+	}
+	return defaultValue
 }
 
 func getEnvAsInt64(name string, defaultValue int64) int64 {
@@ -169,7 +191,7 @@ func validateConfig() {
 	if len(c.DbName()) == 0 {
 		log.Fatal("Config error: db name is empty")
 	}
-	if len(c.RedisPort()) == 0 {
-		log.Fatal("Config error: redis port is empty")
+	if len(c.RedisAddr()) == 0 {
+		log.Fatal("Config error: redis addr is empty")
 	}
 }

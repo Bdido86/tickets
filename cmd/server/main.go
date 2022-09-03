@@ -58,7 +58,7 @@ func main() {
 	}
 	defer listener.Close()
 
-	cache := cache.NewCache(c.RedisPort(), logger)
+	cache := cache.NewCache(c.RedisAddr(), c.RedisPassword(), c.RedisDb(), logger)
 	depsRepo = apiGrpcServer.Deps{
 		Logger:           logger,
 		CinemaRepository: postgres.NewRepository(pool, logger, cache),

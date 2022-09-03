@@ -6,6 +6,7 @@ import (
 	grpcApiClient "gitlab.ozon.dev/Bdido86/movie-tickets/internal/api/grpc/client"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/config"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/broker/kafka"
+	cache "gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/cache/redis"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/logger"
 	pbApiClient "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/client"
 	pbApiServer "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/server"
@@ -38,11 +39,11 @@ func main() {
 	clientGRPCPort := ":" + c.ClientGrpcPort()
 	serverPort := ":" + c.ServerPort()
 
-	go runRestGrpc(ctx, logger, clientGRPCPort, serverPort)
+	go runRestGrpc(ctx, logger, clientGRPCPort, serverPort, c)
 	runRest(ctx, logger, clientPort, clientGRPCPort, c.RequestTimeOutInMilliSecond())
 }
 
-func runRestGrpc(_ context.Context, logger logger.Logger, clientGRPCPort string, serverPort string) {
+func runRestGrpc(_ context.Context, logger logger.Logger, clientGRPCPort string, serverPort string, config *config.Config) {
 	listener, err := net.Listen("tcp", clientGRPCPort)
 	if err != nil {
 		logger.Fatalf("Error clientGRPCPort connect tcp: %v", err)
@@ -60,11 +61,14 @@ func runRestGrpc(_ context.Context, logger logger.Logger, clientGRPCPort string,
 		broker.Close()
 	}()
 
+	cache := cache.NewCache(config.RedisAddr(), config.RedisPassword(), config.RedisDb(), logger)
+
 	server := pbApiServer.NewCinemaBackendClient(serverConn)
 	clientServer := grpcApiClient.Deps{
 		Server: server,
 		Broker: broker,
 		Logger: logger,
+		Cache:  cache,
 	}
 
 	option := grpc.UnaryInterceptor(AuthInterceptor)

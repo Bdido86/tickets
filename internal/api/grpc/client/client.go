@@ -3,7 +3,9 @@ package grpc
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/broker"
+	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/cache"
 	"gitlab.ozon.dev/Bdido86/movie-tickets/internal/pkg/logger"
 	pbClient "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/client"
 	pbServer "gitlab.ozon.dev/Bdido86/movie-tickets/pkg/api/server"
@@ -24,6 +26,7 @@ type Deps struct {
 	Server pbServer.CinemaBackendClient
 	Broker broker.Broker
 	Logger logger.Logger
+	Cache  cache.Cache
 }
 
 func NewServer(d Deps) *server {
@@ -51,14 +54,34 @@ func (s *server) UserAuth(ctx context.Context, in *pbClient.UserAuthRequest) (*p
 	inServer := &pbServer.UserAuthRequest{
 		Name: userName,
 	}
-	serverUserAuthResponse, err := s.Server.UserAuth(ctx, inServer)
-	if err != nil {
-		s.Logger.Errorf("error server UserAuth %v", err)
-		return nil, err
+
+	tokenChannel := make(chan string, 1)
+	subscribeChannel := make(chan struct{})
+	go func() {
+		token, err := s.Cache.SubscribeUser(ctx, userName, subscribeChannel)
+		if err != nil {
+			s.Logger.Error("token is empty")
+		}
+
+		tokenChannel <- token
+	}()
+	go func() {
+		<-subscribeChannel
+		_, err := s.Server.UserAuth(ctx, inServer)
+		if err != nil {
+			s.Logger.Error("token is empty")
+		}
+	}()
+
+	token := <-tokenChannel
+
+	if len(token) == 0 {
+		s.Logger.Error("token is empty")
+		return nil, errors.New("token is empty")
 	}
 
 	return &pbClient.UserAuthResponse{
-		Token: serverUserAuthResponse.Token,
+		Token: token,
 	}, nil
 }
 

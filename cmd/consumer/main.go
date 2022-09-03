@@ -35,7 +35,7 @@ func main() {
 		http.ListenAndServe("localhost:8020", nil)
 	}()
 
-	cache := cache.NewCache(c.RedisPort(), logger)
+	cache := cache.NewCache(c.RedisAddr(), c.RedisPassword(), c.RedisDb(), logger)
 	deps := kafka.Deps{
 		Logger:           logger,
 		CinemaRepository: postgres.NewRepository(pool, logger, cache),
