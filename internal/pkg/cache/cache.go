@@ -11,5 +11,8 @@ type Cache interface {
 	GetUserIdByToken(ctx context.Context, token string) (uint, error)
 	SetUserIdByToken(ctx context.Context, userId uint, token string) bool
 
+	PublishUser(ctx context.Context, user models.User) error
+	SubscribeUser(ctx context.Context, name string, subscribeChannel chan struct{}) (string, error)
+
 	CounterInfo()
 }

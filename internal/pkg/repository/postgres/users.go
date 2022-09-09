@@ -49,6 +49,8 @@ func (r *Repository) AuthUser(ctx context.Context, name string) (models.User, er
 		}
 	}
 
+	r.cache.PublishUser(ctx, user)
+
 	return user, nil
 }
 

@@ -24,11 +24,13 @@ type hitMiss struct {
 	hit  uint
 }
 
-func NewCache(port string, logger logger.Logger) *Redis {
+const userChannel = "userChannel"
+
+func NewCache(addr string, password string, db int, logger logger.Logger) *Redis {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:" + port,
-		Password: "", // no password set
-		DB:       0,  // use default DB
+		Addr:     addr,
+		Password: password, // no password set
+		DB:       db,       // use default DB
 	})
 
 	return &Redis{
@@ -178,6 +180,51 @@ func (r *Redis) GetUserIdByToken(ctx context.Context, token string) (uint, error
 	r.addHit(key)
 
 	return uint(userId), nil
+}
+
+func (r *Redis) PublishUser(ctx context.Context, user models.User) error {
+	ctx, span := trace.StartSpan(ctx, "cache/redis/PublishUser")
+	defer span.End()
+
+	jsonUser, err := json.Marshal(user)
+	if err != nil {
+		r.logger.Errorf("publish userChannel error json Marshal user%v", err)
+		return err
+	}
+
+	if err := r.client.Publish(userChannel, jsonUser).Err(); err != nil {
+		r.logger.Errorf("publish userChannel %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func (r *Redis) SubscribeUser(ctx context.Context, name string, subscribeChannel chan struct{}) (string, error) {
+	ctx, span := trace.StartSpan(ctx, "cache/redis/SubscribeUser")
+	defer span.End()
+
+	pubSub := r.client.Subscribe(userChannel)
+	defer pubSub.Close()
+
+	var user models.User
+
+	ch := pubSub.Channel()
+
+	subscribeChannel <- struct{}{}
+	for msg := range ch {
+		err := json.Unmarshal([]byte(msg.Payload), &user)
+		if err != nil {
+			r.logger.Errorf("error publish SubscribeUser %v", err)
+			return "", err
+		}
+		if name != user.Name {
+			r.logger.Errorf("invalid name %v", user.Name)
+			return "", err
+		}
+		return user.Token, nil
+	}
+	return "", nil
 }
 
 func getKeyUserTickets(userId uint) string {
